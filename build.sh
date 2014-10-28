@@ -7,7 +7,7 @@ CURRENT=`pwd`
 : ${APOLLO_JBROWSE_DIRECTORY:="$APOLLO_WEBAPP_DIRECTORY/jbrowse"}
 : ${APOLLO_JBROWSE_GITHUB:="$APOLLO_ROOT_DIRECTORY/jbrowse-github"}
 : ${JBROWSE_GITHUB:="https://github.com/GMOD/jbrowse"}
-: ${JBROWSE_RELEASE:="master"}
+: ${JBROWSE_RELEASE:="yeban-bowerise"}
 : ${JBROWSE_VERSION:="dev"}
 : ${GIT_VERSION:=`git rev-parse --verify HEAD`}
 : ${POM_VERSION:=`mvn validate | grep Building | cut -d' ' -f4`}
@@ -39,7 +39,9 @@ echo "<a href='https://github.com/GMOD/Apollo/commit/${GMOD_VERSION}' target='_b
 if [ ! -d "$APOLLO_JBROWSE_GITHUB" ]; then
   echo "No jbrowse repo found at $APOLLO_JBROWSE_GITHUB, cloning from $JBROWSE_GITHUB"
   cd $APOLLO_BUILD_DIRECTORY
-  git clone --depth 1 --recursive $JBROWSE_GITHUB $APOLLO_JBROWSE_GITHUB
+  git clone --depth 1 --branch $JBROWSE_RELEASE $JBROWSE_GITHUB $APOLLO_JBROWSE_GITHUB
+  cd $APOLLO_JBROWSE_GITHUB
+  bower install
   cd $CURRENT
 fi
 
