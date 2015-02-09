@@ -16,6 +16,8 @@ define(
            'dojo/dom-class',
            'dojo/_base/window',
            'dojo/_base/array',
+           'dojo/io-query',
+           'dojo/query',
            'dijit/Menu',
            'dijit/MenuItem',
            'dijit/MenuSeparator',
@@ -36,7 +38,7 @@ define(
            'JBrowse/View/FileDialog/TrackList/GFF3Driver',
            'lazyload/lazyload'
        ],
-    function( declare, domConstruct, domClass, win, array, dijitMenu,dijitMenuItem, dijitMenuSeparator, dijitCheckedMenuItem, dijitPopupMenuItem, dijitDropDownButton, dijitDropDownMenu, dijitButton, JBPlugin,
+    function( declare, domConstruct, domClass, win, array, ioQuery,query, dijitMenu,dijitMenuItem, dijitMenuSeparator, dijitCheckedMenuItem, dijitPopupMenuItem, dijitDropDownButton, dijitDropDownMenu, dijitButton, JBPlugin,
               FeatureEdgeMatchManager, FeatureSelectionManager, TrackConfigTransformer, AnnotTrack, Hierarchical, Faceted, InformationEditor, HelpMixin, GFF3Driver,LazyLoad ) {
 
 return declare( [JBPlugin, HelpMixin],
@@ -294,6 +296,16 @@ return declare( [JBPlugin, HelpMixin],
 
         });
 
+        queryString = ioQuery.queryToObject(decodeURIComponent(dojo.doc.location.search.slice(1)));
+        alert(queryString.hideMenu);
+        if(queryString.hideMenu=='true'){
+            alert('hiding');
+            query('.menuBar').style('display','none');
+            alert('HID');
+        }
+        else{
+            alert('not hiding: ' + JSON.stringify(queryString));
+        }
 
     },
     updateLabels: function() {
