@@ -1,7 +1,7 @@
 
 ### Tomcat memory
 
-<a href="https://github.com/GMOD/Apollo/blob/master/docs/Troubleshooting.md">On GitHub</a>
+View <a href="https://github.com/GMOD/Apollo/blob/master/docs/Troubleshooting.md">On GitHub</a>
 
 
 Many times the default memory allowance is too low.
@@ -31,16 +31,6 @@ This problem often indicates that credentials for the LocalDbUserAuthentication 
 ### Getting logged out when entering JBrowse
 
 This often indicates that the add-webapollo-plugin.pl script wasn't run properly, which will update JBrowse's configuration and load the Web Apollo plugin. See the [data generation](Data_loading.md) for details on this step.
-
-
-### No error message from failed Web Apollo login
-
-Web Apollo uses a custom error reporting valve. To setup, add `errorReportValveClass="org.bbop.apollo.web.ErrorReportValve"` as an attribute to the existing <Host> element in tomcat's server.xml (e.g. /var/lib/tomcat7/conf/server.xml)
-
-    <Host name="localhost" appBase="webapps" 
-      unpackWARs="true" autoDeploy="true" 
-      errorReportValveClass="org.bbop.apollo.web.ErrorReportValve">
-    </Host>
 
 
 ### Errors running JBrowse scripts
@@ -102,3 +92,9 @@ You must install chado to use the Chado export feature, and you must also set it
         at org.bbop.apollo.web.dataadapter.chado.ChadoDataAdapter.write(ChadoDataAdapter.java:68)
 
 Then you must also make sure to import your genome into Chado. Refer to the configuration guide for this note on [Chado export](Configure.md#important-note-for-chado-export).
+
+
+### Differences between JBrowse and WebApollo
+
+
+The "linkTemplate" track configuration parameter in JBrowse is overridden by WebApollo's feature edge matcher and drag and drop functions. It is recommended to use menuTemplate instead.

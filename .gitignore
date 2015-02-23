@@ -6,6 +6,9 @@ target/**
 config.properties
 src/main/webapp/config.properties
 src/main/webapp/config.xml
+src/main/webapp/canned_comments.xml
+src/main/webapp/config/oauth.xml
+drupal.xml
 config.xml
 blat_config.xml
 src/main/webapp/jbrowse/
@@ -28,6 +31,8 @@ apollo-config.groovy
 gwt-unitCache/**
 web-app/WEB-INF/deploy/**
 web-app/annotator/**
+canned_comments.xml
+oauth.xml
 /extlib/
 setup.log
 /src/perl5/

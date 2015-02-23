@@ -3,27 +3,20 @@
     "configuration": {
         "name": "Default",
         "properties": {
-            "property": {
+            "property": [{
                 "name":"Directory",
-                "value":"${sys:user.home}/logs"
-            }
-            //,"property": {
-            //    "name":"FileName",
-            //    "value":"test.log"
-            //}
+                "value":"${sys:catalina.base}/logs"
+            },
+            {
+                "name":"FileName",
+                "value":"webapollo.log"
+            }]
         },
         "appenders": {
-            "Console": {
-                "name":"Console",
-                "target":"SYSTEM_OUT",
-                "PatternLayout": {
-                    "pattern":"%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"
-                }
-            },
             "RollingFile": {
                 "name":"File",
                 "fileName":"${Directory}/${FileName}",
-                "filePattern":"${Directory}/${date:yyyy-MM}/test-%d{MM-dd-yyyy}-%i.log.gz",
+                "filePattern":"${Directory}/${date:yyyy-MM}/webapollo-%d{MM-dd-yyyy}-%i.log.gz",
                 "PatternLayout": {
                     "pattern":"%d %p %logger{36} [%t] %m%n"
                 },
@@ -39,13 +32,10 @@
         },
         "loggers": {
             "root": {
-                "level":"error",
+                "level":"debug",
                 "appender-ref": {
-                    "ref":"Console"
+                    "ref":"File"
                 }
-                //, "appender-ref": {
-                //    "ref":"File"
-                //}
             }
         }
     }

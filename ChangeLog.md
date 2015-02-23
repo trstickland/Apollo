@@ -1,3 +1,45 @@
+## 1.0.4 release
+
+Features
+
++ Added Drupal authentication module to share authentication with an existing Drupal DB (#117).
++ Made "Show track labels" and "Color by CDS" more persistent (#120).
++ Added a "collapse" option to the User-created annotations track (#155).
++ Changed maxHeight on User-create annotations track to prevent overflow (#124).
+
+Bugfixes
+
++ Fixed an issue where the API could be used to create random berkeley DBs (#152).
++ Fixed the sample log4j2 implementation and added extra notes on it to the documentation (#151).
++ Fixed an issue where the config files were readable by the outside world in previous 1.x versions.
++ Changed default user database to be encrypted. Unencrypted options are still available via command line scripts for people with older configurations (#147).
++ Added new Help page with WebApollo specific content (#153).
++ Fixed bug where Tomcat could report "Too many open files error" (#162).
++ Fixed bug where the dark theme made the reference sequence too dark (#119).
++ Added some basic help text for search parameters in the sequences view (#160).
++ Added MIME types for bigwig files (#166).
++ Changed title page to match content (#158).
+
+
+## 1.0.3 release
+
+Features 
+
++ Added ability to view GFF3 for individual annotations
+
+Bugfixes
+
++ Speed up set\_track\_permissions.pl (#118)
++ Fix some cases where error reporting was broken on login pages (#111)
++ Fix Chado export case where DBXref or DB were not pre-existing (#103)
++ Fixed issue where HTTP header size could become large when exporting all tracks (#101)
++ Fixed issue when jbrowse "bin" directory not created properly during deployment (#97)
++ Added apollo "release" target to build a precompiled target (#96)
++ Provided support to visualize GFF3 files on a per-feature basis (#89)
++ Fixed URL encoding of multiple attributes with the same key in GFF3 export (#82)
++ Fixed GFF3 and FASTA export where no annotations existed (#62)
++ Fixed where genome insertion trigers recalculate CDS on non-coding features (#30)
+
 ## 1.0.2 release 
 
 Features: 

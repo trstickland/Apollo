@@ -672,7 +672,7 @@ function open_user_manager_dialog() {
     </ul>
     </li>
     <%
-        }
+//        }
         if (username != null) {
     %>
     <li><a id="user_item"><span class='usericon'></span><%=username%>

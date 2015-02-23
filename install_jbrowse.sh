@@ -12,28 +12,32 @@ done_message () {
 
 echo > setup.log;
 echo -n "Installing Perl prerequisites ..."
-if [ -f bin/cpanm ]; then 
-	echo  "Prerequisites installed, finished.";
-	exit 0; 
-fi
-
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
     echo;
     echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar.";
 fi;
 ( set -x;
-  cd web-app/jbrowse;
+  dir=""
+  if [ -d "$1" ]; then
+    dir=$1;
+  elif [ -d src/jbrowse ]; then
+   dir=src/jbrowse;
+  elif [ -d src/main/webapp/jbrowse ]; then
+   dir=src/main/webapp/jbrowse;
+  fi;
+  echo $dir
+  cd $dir
   chmod +x bin/cpanm
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON < /dev/null;
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON < /dev/null;
-  bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
-  bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
+  bin/cpanm -v --notest -l ../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey< /dev/null;
+  bin/cpanm -v --notest -l ../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey < /dev/null;
+  bin/cpanm -v --notest -l ../../extlib/ --installdeps .< /dev/null;
+  bin/cpanm -v --notest -l ../../extlib/ --installdeps .< /dev/null;
   set -e;
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON < /dev/null;
-  bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
+  bin/cpanm -v --notest -l ../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey < /dev/null;
+  bin/cpanm -v --notest -l ../../extlib/ --installdeps .< /dev/null;
   cd -;
-  cp -r web-app/jbrowse/bin/ bin;
+  cp -r src/jbrowse/bin/ bin;
   chmod +x bin/*.pl;
-  cp -r web-app/jbrowse/src/perl5 src/perl5;
+  cp -r src/jbrowse/src/perl5 src/perl5;
 ) >>setup.log 2>&1;
 done_message "" "As a first troubleshooting step, make sure development libraries and header files for GD, Zlib, and libpng are installed and try again.";

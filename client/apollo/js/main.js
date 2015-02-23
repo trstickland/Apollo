@@ -6,12 +6,15 @@ require({
        },
        [],
        function() {
-
 define.amd.jQuery = true;
-
-define(
-       [
+define([
            'dojo/_base/declare',
+           'dojo/_base/lang',
+           'dojo/dom-construct',
+           'dojo/dom-class',
+           'dojo/_base/window',
+           'dojo/_base/array',
+           'dojo/request/xhr',
            'dijit/Menu',
            'dijit/MenuItem',
            'dijit/MenuSeparator',
@@ -21,28 +24,47 @@ define(
            'dijit/DropDownMenu',
            'dijit/form/Button',
            'JBrowse/Plugin',
-           './FeatureEdgeMatchManager',
-           './FeatureSelectionManager',
-           './TrackConfigTransformer',
-           './View/Track/AnnotTrack',
-           './View/TrackList/Hierarchical',
-           './View/TrackList/Faceted',
-           './InformationEditor',
-           'JBrowse/View/FileDialog/TrackList/GFF3Driver',
-           'lazyload/lazyload'
+           'WebApollo/FeatureEdgeMatchManager',
+           'WebApollo/FeatureSelectionManager',
+           'WebApollo/TrackConfigTransformer',
+           'WebApollo/View/Track/AnnotTrack',
+           'WebApollo/View/TrackList/Hierarchical',
+           'WebApollo/View/TrackList/Faceted',
+           'WebApollo/View/Dialog/Help',
+           'JBrowse/View/FileDialog/TrackList/GFF3Driver'
        ],
-    function( declare, dijitMenu,dijitMenuItem, dijitMenuSeparator, dijitCheckedMenuItem, dijitPopupMenuItem, dijitDropDownButton, dijitDropDownMenu, dijitButton, JBPlugin,
-              FeatureEdgeMatchManager, FeatureSelectionManager, TrackConfigTransformer, AnnotTrack, Hierarchical, Faceted, InformationEditor, GFF3Driver,LazyLoad ) {
+    function( declare,
+            lang,
+            domConstruct,
+            domClass,
+            win,
+            array,
+            xhr,
+            dijitMenu,
+            dijitMenuItem,
+            dijitMenuSeparator,
+            dijitCheckedMenuItem,
+            dijitPopupMenuItem,
+            dijitDropDownButton,
+            dijitDropDownMenu,
+            dijitButton,
+            JBPlugin,
+            FeatureEdgeMatchManager,
+            FeatureSelectionManager,
+            TrackConfigTransformer,
+            AnnotTrack,
+            Hierarchical,
+            Faceted,
+            HelpMixin,
+            GFF3Driver
+            ) {
 
-return declare( JBPlugin,
+return declare( [JBPlugin, HelpMixin],
 {
-
     constructor: function( args ) {
         console.log("loaded WebApollo plugin");
         var thisB = this;
-        this.colorCdsByFrame = false;
         this.searchMenuInitialized = false;
-        this.showTrackLabel = true ;
         var browser = this.browser;  // this.browser set in Plugin superclass constructor
         [
           'plugins/WebApollo/jslib/bbop/bbop.js',
@@ -58,28 +80,17 @@ return declare( JBPlugin,
         });
 
         // Checking for cookie for determining the color scheme of WebApollo
-        if (document.cookie.indexOf("Scheme=Dark") === -1) {
-            this.changeCssScheme = false;
+        if( browser.cookie("Scheme")=="Dark" ) {
+            domClass.add(win.body(), "Dark");
         }
-        else {
-            this.changeCssScheme = true;
-            LazyLoad.css('plugins/WebApollo/css/maker_darkbackground.css');
+        if( browser.cookie("colorCdsByFrame")=="true" ) {
+            domClass.add(win.body(), "colorCds");
         }
-
-
-        if (browser.config.favicon) {
-            // this.setFavicon("plugins/WebApollo/img/webapollo_favicon.ico");
+        if( browser.config.favicon ) {
             this.setFavicon(browser.config.favicon);
         }
+        
 
-        args.cssLoaded.then( function() {
-            if (! browser.config.view) { browser.config.view = {}; }
-            browser.config.view.maxPxPerBp = thisB.getSequenceCharacterSize().width;
-        } );
-
-        if (! browser.config.helpUrl)  {
-            browser.config.helpUrl = "http://genomearchitect.org/webapollo/docs/help.html";
-        }
 
         // hand the browser object to the feature edge match manager
         FeatureEdgeMatchManager.setBrowser( browser );
@@ -97,479 +108,127 @@ return declare( JBPlugin,
         FeatureEdgeMatchManager.addSelectionManager(this.featSelectionManager);
         FeatureEdgeMatchManager.addSelectionManager(this.annotSelectionManager);
 
-        this.addNavigationOptions();
-
-        // add a global menu option for setting CDS color
-        var cds_frame_toggle = new dijitCheckedMenuItem(
-                {
-                    label: "Color by CDS frame",
-                    checked: false,
-                    onClick: function(event) {
-                        thisB.colorCdsByFrame = cds_frame_toggle.checked;
-                        browser.view.redrawTracks();
-                    }
-                });
-        browser.addGlobalMenuItem( 'view', cds_frame_toggle );
-
-        //Adding a global menu option for changing CSS color scheme
-        var box_check;
-        if (this.changeCssScheme) {
-            box_check = true;
-        }
-        else {
-            box_check = false;
-        }
-
-        var css_frame_menu = new dijitMenu();
-
-        css_frame_menu.addChild(
-            new dijitMenuItem({
-                    label: "Light",
-                    onClick: function (event) {
-                        document.cookie = "Scheme=Light";
-                        window.location.reload();
-                    }
-                }
-            )
-        );
-        css_frame_menu.addChild(
-            new dijitMenuItem({
-                    label: "Dark",
-                    onClick: function (event) {
-                        document.cookie = "Scheme=Dark";
-                        window.location.reload();
-                    }
-                }
-            )
-        );
+        this.setupWebapolloTrackTypes();
 
 
-        var css_frame_toggle = new dijitPopupMenuItem(
-            {
-                label: "Color Scheme"
-                ,popup: css_frame_menu
-            });
-
-        browser.addGlobalMenuItem('view', css_frame_toggle);
-
-        this.addStrandFilterOptions();
-
-
-        if (browser.config.show_nav) {
-            //var helpUrl = browser.config.helpUrl;
-//            var guideUrl = "http://genomearchitect.org/webapollo/docs/webapollo_user_guide.pdf";
-//            var wikiUrl = "http://www.gmod.org/wiki/WebApollo";
-            var jbrowseUrl = "http://jbrowse.org";
-            //browser.addGlobalMenuItem( 'help',
-            //                        new dijitMenuItem(
-            //                            {
-            //                                id: 'menubar_apollo_quickstart',
-            //                                label: 'General',
-            //                                onClick: function()  { window.open(helpUrl,'help_window').focus(); }
-            //                            })
-            //                      );
-           /*
-            browser.addGlobalMenuItem( 'help',
-                                    new dijitMenuItem(
-                                        {
-                                            id: 'menubar_apollo_userguide',
-                                            label: 'User Guide',
-                                            onClick: function()  { window.open(guideUrl,'help_window').focus(); }
-                                        })
-                                  );
-            browser.addGlobalMenuItem( 'help',
-                                    new dijitMenuItem(
-                                        {
-                                            id: 'menubar_apollo_wiki',
-                                            label: 'Wiki',
-                                            onClick: function()  { window.open(wikiUrl,'help_window').focus(); }
-                                        })
-                                  );
-*/
-            browser.addGlobalMenuItem( 'help',
-                                    new dijitMenuItem(
-                                        {
-                                            id: 'menubar_powered_by_jbrowse',
-                                            label: 'Powered by JBrowse',
-                                            // iconClass: 'jbrowseIconHelp', 
-                                            onClick: function()  { window.open(jbrowseUrl,'help_window').focus(); }
-                                        })
-                                  );
-            browser.addGlobalMenuItem( 'help',
-                new dijitMenuItem(
-                    {
-                        id: 'menubar_web_service_api',
-                        label: 'Web Service API',
-                        // iconClass: 'jbrowseIconHelp',
-                        onClick: function()  { window.open("../web_services/web_service_api.html",'help_window').focus(); }
-                    })
-            );
-            browser.addGlobalMenuItem( 'help',
-                new dijitMenuItem(
-                    {
-                        id: 'menubar_apollo_users_guide',
-                        label: 'Apollo User\'s Guide',
-                        // iconClass: 'jbrowseIconHelp',
-                        onClick: function()  {
-                            window.open("http://genomearchitect.org/web_apollo_user_guide",'help_window').focus();
-                        }
-                    })
-            );
-            browser.addGlobalMenuItem( 'help',
-                new dijitMenuItem(
-                    {
-                        id: 'menubar_apollo_version',
-                        label: 'Get Version',
-                        // iconClass: 'jbrowseIconHelp',
-                        onClick: function()  {
-                            window.open("../version.jsp",'help_window').focus();
-                        }
-                    })
-            );
-        }
-
-        // register the WebApollo track types with the browser, so
-        // that the open-file dialog and other things will have them
-        // as options
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/DraggableHTMLFeatures',
-            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/NCList',
-                                    'JBrowse/Store/SeqFeature/GFF3',
-                                    'WebApollo/Store/SeqFeature/ApolloGFF3'
-                                  ],
-            label: 'WebApollo Features'
-        });
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/DraggableAlignments',
-            defaultForStoreTypes: [
-                                    'JBrowse/Store/SeqFeature/BAM'
-                                  ],
-            label: 'WebApollo Alignments'
-        });
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/SequenceTrack',
-            defaultForStoreTypes: [ 'JBrowse/Store/Sequence/StaticChunked' ],
-            label: 'WebApollo Sequence'
-        });
-
-        // transform track configs from vanilla JBrowse to WebApollo:
-        // type: "JBrowse/View/Track/HTMLFeatures" ==> "WebApollo/View/Track/DraggableHTMLFeatures"
-        //
-        var track_configs = browser.config.tracks;
-        for (var i=0; i<track_configs.length; i++)  {
-            var track_config = track_configs[i];
-            this.trackTransformer.transform(track_config);
-        }
-
-        // update track selector to WebApollo's if needed
-        // if no track selector set, use WebApollo's Hierarchical selector
-        if (!browser.config.trackSelector) {
-            browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
-        }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
-        else if (browser.config.trackSelector.type == "Hierarchical") {
-            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
-        }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
-        else if (browser.config.trackSelector.type == "Faceted") {
-            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
-        }
-
-        // put the WebApollo logo in the powered_by place in the main JBrowse bar
+        thisB.createViewMenu();
+        thisB.addStrandFilterOptions();
+        thisB.createHelpMenu();
         browser.afterMilestone( 'initView', function() {
-            // dojo.connect( browser.browserWidget, "resize", thisB, 'onResize' );
             if (browser.poweredByLink)  {
-                dojo.disconnect(browser.poweredBy_clickHandle);
                 browser.poweredByLink.innerHTML = '<img src=\"plugins/WebApollo/img/ApolloLogo_100x36.png\" height=\"25\" />';
-                browser.poweredByLink.href = 'http://genomearchitect.org/';
-                browser.poweredByLink.target = "_blank";
             }
-
-            // Initialize information editor with similar style to track selector
-            /*browser.informationEditor=new InformationEditor(
-                dojo.mixin(
-                        dojo.clone( browser.config.bookmarkPanel ) || {},
-                        {
-                            browser: browser,
-                            title: "Info Editor"
-                        }
-                )
-            );
-            browser.tabContainer.addChild(browser.informationEditor);
-            */
-            var view = browser.view;
-            view.oldOnResize = view.onResize;
-
-             /* trying to fix residues rendering bug when web browser scaling/zoom (Cmd+, Cmd-) is used
-              *    bug appears in Chrome, not Firefox, unsure of other browsers
-              */
-            view.onResize = function() {
-                // detect if zoomed into base level
-                // var fullZoom = (view.pxPerBp == view.maxPxPerBp);
-                // if showing residues (full zoom), then pxPerBp == maxPxPerBp
-                //     probably shouldn't ever have pxPerBp > maxPxPerBp, but catching and considereing as fullZoom as well, just in case
-                var fullZoom = (view.pxPerBp >= view.maxPxPerBp);
-                var centerBp = Math.round((view.minVisible() + view.maxVisible())/2);
-                var oldCharSize = thisB.getSequenceCharacterSize();
-                var newCharSize = thisB.getSequenceCharacterSize(true);
-                // detect if something happened to change pixel size of residues font (likely a web browser zoom)
-                var charWidthChanged = (newCharSize.width != oldCharSize.width);
-                var charWidth = newCharSize.width;
-                if (charWidthChanged) {
-                    // if charWidth changed, need to change maxPxPerBp to match
-                    // console.log("residues font size changed, new char width = " + newCharSize.width);
-                    if (! browser.config.view) { browser.config.view = {}; }
-                    browser.config.view.maxPxPerBp = charWidth;
-                    view.maxPxPerBp = charWidth;
-                }
-                if (charWidthChanged && fullZoom) {
-                    // console.log("at full zoom, trying font size fix");
-                    view.pxPerBp = view.maxPxPerBp;
-                    view.oldOnResize();
-                    thisB.browserZoomFix(centerBp);
-                }
-                else  {
-                    view.oldOnResize();
-                }
-            };
-
-            var customGff3Driver = dojo.declare("ApolloGFF3Driver", GFF3Driver,   {
-                constructor: function( args ) {
-                    this.storeType = 'WebApollo/Store/SeqFeature/ApolloGFF3';
-                }
-            });
-            // browser.registerExtraFileDriver(customGff3Driver);
-            browser.fileDialog.addFileTypeDriver(new customGff3Driver());
+            var help=dijit.byId("menubar_generalhelp");
+            help.set("label", "Web Apollo Help");
 
         });
-
+        this.monkeyPatchRegexPlugin();
 
     },
-
-
-    /**
-     *  Hack to try and fix residues rendering bug when web browser scaling/zoom (Cmd+, Cmd-) is used
-     *    bug appears in Chrome, not Firefox, unsure of other browsers
-     *    based on GenomeView.zoomToBaseLevel(), GenomeView.updateZoom(), then stripping away unneeded
-    */
-    browserZoomFix: function(pos) {
-        var view = this.browser.view;
-        if (view.animation) return;
-        var baseZoomIndex = view.zoomLevels.length - 1;
-        var zoomLoc = 0.5;
-        view.showWait();
-        view.trimVertical();
-        var relativeScale = view.zoomLevels[baseZoomIndex] / view.pxPerBp;
-        var fixedBp = pos;
-        view.curZoom = baseZoomIndex;
-        view.pxPerBp = view.zoomLevels[baseZoomIndex];
-        view.maxLeft = (view.pxPerBp * view.ref.end) - view.getWidth();
-
-        // needed, otherwise Density track can render wrong
-        //    possibly would have problems with other Canvas-based tracks too, though haven't seen in XYPlot yet
-        for (var track = 0; track < view.tracks.length; track++)
-            view.tracks[track].startZoom(view.pxPerBp,
-                                         fixedBp - ((zoomLoc * view.getWidth())
-                                                    / view.pxPerBp),
-                                         fixedBp + (((1 - zoomLoc) * view.getWidth())
-                                                    / view.pxPerBp));
-
-        var eWidth = view.elem.clientWidth;
-        var centerPx = view.bpToPx(fixedBp) - (zoomLoc * eWidth) + (eWidth / 2);
-        // stripeWidth: pixels per block
-        view.stripeWidth = view.stripeWidthForZoom(view.curZoom);
-        view.scrollContainer.style.width =
-            (view.stripeCount * view.stripeWidth) + "px";
-        view.zoomContainer.style.width =
-            (view.stripeCount * view.stripeWidth) + "px";
-        var centerStripe = Math.round(centerPx / view.stripeWidth);
-        var firstStripe = (centerStripe - ((view.stripeCount) / 2)) | 0;
-        view.offset = firstStripe * view.stripeWidth;
-        view.maxOffset = view.bpToPx(view.ref.end+1) - view.stripeCount * view.stripeWidth;
-        view.maxLeft = view.bpToPx(view.ref.end+1) - view.getWidth();
-        view.minLeft = view.bpToPx(view.ref.start);
-        view.zoomContainer.style.left = "0px";
-        view.setX((centerPx - view.offset) - (eWidth / 2));
-        dojo.forEach(view.uiTracks, function(track) { track.clear(); });
-
-        // needed, otherwise Density track can render wrong
-        //    possibly would have problems with other Canvas-based tracks too, though haven't seen in XYPlot yet
-        view.trackIterate( function(track) {
-            track.endZoom( view.pxPerBp,Math.round(view.stripeWidth / view.pxPerBp));
-        });
-
-        view.showVisibleBlocks(true);
-        view.showDone();
-        view.showCoarse();
-    },
-
-
-    plusStrandFilter: function(feature)  {
-        var strand = feature.get('strand');
-        if (strand == 1 || strand == '+')  { return true; }
-        else  { return false; }
-    },
-
-    minusStrandFilter: function(feature)  {
-        var strand = feature.get('strand');
-        if (strand == -1 || strand == '-')  { return true; }
-        else  { return false; }
-    },
-    passAllFilter: function(feature)  {  return true; },
-    passNoneFilter: function(feature)  { return false; },
-
-    addStrandFilterOptions: function()  {
-        var thisB = this;
-        var browser = this.browser;
-        var plus_strand_toggle = new dijitCheckedMenuItem(
-                {
-                    label: "Show plus strand",
-                    checked: true,
-                    onClick: function(event) {
-                        var plus = plus_strand_toggle.checked;
-                        var minus = minus_strand_toggle.checked;
-                        console.log("plus: ", plus, " minus: ", minus);
-                        if (plus && minus)  {
-                            browser.setFeatureFilter(thisB.passAllFilter);
-                        }
-                        else if (plus)  {
-                            browser.setFeatureFilter(thisB.plusStrandFilter);
-                        }
-                        else if (minus)  {
-                            browser.setFeatureFilter(thisB.minusStrandFilter);
-                        }
-                        else  {
-                            browser.setFeatureFilter(thisB.passNoneFilter);
-                        }
-                        browser.view.redrawTracks();
-                    }
-                });
-        browser.addGlobalMenuItem( 'view', plus_strand_toggle );
-        var minus_strand_toggle = new dijitCheckedMenuItem(
-                {
-                    label: "Show minus strand",
-                    checked: true,
-                    onClick: function(event) {
-                        var plus = plus_strand_toggle.checked;
-                        var minus = minus_strand_toggle.checked;
-                        console.log("plus: ", plus, " minus: ", minus);
-                        if (plus && minus)  {
-                            browser.setFeatureFilter(thisB.passAllFilter);
-                        }
-                        else if (plus)  {
-                            browser.setFeatureFilter(thisB.plusStrandFilter);
-                        }
-                        else if (minus)  {
-                            browser.setFeatureFilter(thisB.minusStrandFilter);
-                        }
-                        else  {
-                            browser.setFeatureFilter(thisB.passNoneFilter);
-                        }
-                        browser.view.redrawTracks();
-                        }
-                });
-        browser.addGlobalMenuItem( 'view', minus_strand_toggle );
-        var hide_track_label_toggle = new dijitCheckedMenuItem(
-            {
-                label: "Show track label",
-                checked: this.showTrackLabel,
-                onClick: function(event) {
-                    if(hide_track_label_toggle.checked){
-                        $('.track-label').show();
-                        this.showTrackLabel = true ;
-                    }
-                    else{
-                        $('.track-label').hide();
-                        this.showTrackLabel = false ;
-                    }
-                }
-            });
-
-        if(this.showTrackLabel){
-            $('.track-label').show();
+    showLabels: function(show,updating) {
+        var browser=this.browser;
+        var showLabels;
+        if(updating) {
+            showLabels=(browser.cookie("showTrackLabel")||"true")=="true";
         }
-        else{
+        else { showLabels=show; }
+        if(!showLabels) {
             $('.track-label').hide();
         }
-
-        browser.addGlobalMenuItem( 'view', hide_track_label_toggle);
-        browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
-    },
-    addNavigationOptions: function()  {
-        var thisB = this;
-        var browser = this.browser;
-        //var select_Tracks = new dijitMenuItem(
-        //    {
-        //        label: "Sequences",
-        //        onClick: function(event) {
-        //            window.open('../sequence', '_blank');
-        //        }
-        //    });
-        //browser.addGlobalMenuItem( 'view', select_Tracks );
-        //var select_Organisms= new dijitMenuItem(
-        //    {
-        //        label: "Organisms",
-        //        onClick: function(event) {
-        //            window.open('../organism', '_blank');
-        //        }
-        //    });
-        //browser.addGlobalMenuItem( 'view', select_Organisms );
-        //var select_Permissions = new dijitMenuItem(
-        //    {
-        //        label: "Permissions",
-        //        onClick: function(event) {
-        //            window.open('../permissions', '_blank');
-        //        }
-        //    });
-        //browser.addGlobalMenuItem( 'view', select_Permissions);
-        //var recent_Changes = new dijitMenuItem(
-        //    {
-        //        label: "Changes",
-        //        onClick: function(event) {
-        //            window.open('../changes', '_blank');
-        //        }
-        //    });
-        //browser.addGlobalMenuItem( 'view', recent_Changes );
-        //browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
-    },
-
-    /**
-     * hacking addition of a "tools" menu to standard JBrowse menubar,
-     *    with a "Search Sequence" dropdown
-     */
-    initSearchMenu: function()  {
-        if (! this.searchMenuInitialized) {
-            var webapollo = this;
-            this.browser.addGlobalMenuItem( 'tools',
-                                            new dijitMenuItem(
-                                                {
-                                                    id: 'menubar_apollo_seqsearch',
-                                                    label: "Search sequence",
-                                                    onClick: function() {
-                                                        webapollo.getAnnotTrack().searchSequence();
-                                                    }
-                                                }) );
-            this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
-
-
-            //this.browser.addGlobalMenuItem( 'tools',
-            //    new dijitMenuItem(
-            //        {
-            //            id: 'menubar_apollo_seqsearch',
-            //            label: "Search sequence",
-            //            onClick: function() {
-            //                webapollo.getAnnotTrack().searchSequence();
-            //            }
-            //        }) );
-            //this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
+        else {
+            $('.track-label').show();
         }
+    },
 
-        // move Tool menu in front of Help menu (Help should always be last menu?)
-        // Dojo weirdness: actual menu pulldown get assigned "widgetid" equal to "id" passed when creating dijit DropDownButton
-        var $toolsMenu = $('.menu[widgetid="dropdownbutton_tools"');
-        //this.$tools_menu = $('#dropdownbutton_tools').parent().parent();   // gives same result...
-        var $helpMenu = $('.menu[widgetid="dropdownbutton_help"');
-        $toolsMenu.insertBefore($helpMenu);
+    addStrandFilterOptions: function()  {
+        var browser=this.browser;
+        var thisB = this;
+
+        var strandFilter = function(name,callback) {
+            if(browser.cookie(name)=="true") {
+                browser.addFeatureFilter(callback,name);
+            } else {
+                browser.removeFeatureFilter(name);
+            }
+        };
+        var minusStrandFilter = function(feature)  {
+            var strand = feature.get('strand');
+            return strand == 1 || strand == '+';
+        };
+
+        var plusStrandFilter = function(feature)  {
+            var strand = feature.get('strand');
+            return strand == -1 || strand == '-';
+        };
+
+        var plus_strand_toggle = new dijitCheckedMenuItem(
+                {
+                    label: "Hide plus strand",
+                    checked: browser.cookie("plusStrandFilter")=="true",
+                    onClick: function(event) {
+                        browser.cookie("plusStrandFilter",this.get("checked")?"true":"false");
+                        strandFilter("plusStrandFilter",plusStrandFilter);
+                        browser.view.redrawTracks();
+                    }
+                });
+        var minus_strand_toggle = new dijitCheckedMenuItem(
+                {
+                    label: "Hide minus strand",
+                    checked: browser.cookie("minusStandFilter")=="true",
+                    onClick: function(event) {
+                        browser.cookie("minusStrandFilter",this.get("checked")?"true":"false");
+                        strandFilter("minusStrandFilter",minusStrandFilter);
+                        browser.view.redrawTracks();
+                    }
+                });
+        browser.addGlobalMenuItem( 'view', minus_strand_toggle );
+        browser.addGlobalMenuItem( 'view', plus_strand_toggle );
+
+        strandFilter("minusStrandFilter",minusStrandFilter);
+        strandFilter("plusStrandFilter",plusStrandFilter);
+    },
+    
+    
+        
+    createNavigationOptions: function()  {
+        var browser = this.browser;
+        var select_Tracks = new dijitMenuItem(
+            {
+                label: "Sequences",
+                onClick: function(event) {
+                    window.open('../sequences', '_blank');
+                }
+            });
+        browser.addGlobalMenuItem( 'tools', select_Tracks );
+        var recent_Changes = new dijitMenuItem(
+            {
+                label: "Changes",
+                onClick: function(event) {
+                    window.open('../changes', '_blank');
+                }
+            });
+        browser.addGlobalMenuItem( 'tools', recent_Changes );
+    },
+
+    initSearchMenu: function()  {
+        var thisB = this;
+        this.browser.addGlobalMenuItem( 'tools',
+            new dijitMenuItem(
+                {
+                    id: 'menubar_apollo_seqsearch',
+                    label: "Search sequence",
+                    onClick: function() {
+                        thisB.getAnnotTrack().searchSequence();
+                    }
+                })
+        );
+        this.createNavigationOptions();
+        this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
+
+        // move Tool menu in front of Help menu
+        var toolsMenu = dijit.byId('dropdownbutton_tools');
+        var helpMenu = dijit.byId('dropdownbutton_help');
+        domConstruct.place(toolsMenu.domNode,helpMenu.domNode,'before');
         this.searchMenuInitialized = true;
     },
 
@@ -579,13 +238,13 @@ return declare( JBPlugin,
         var loginButton;
         if (username)  {   // permission only set if permission request succeeded
             this.browser.addGlobalMenuItem( 'user',
-                            new dijitMenuItem(
-                                            {
-                                                    label: 'Logout',
-                                                    onClick: function()  {
-                                                            webapollo.getAnnotTrack().logout();
-                                                    }
-                                            })
+                new dijitMenuItem(
+                    {
+                        label: 'Logout',
+                        onClick: function()  {
+                            webapollo.getAnnotTrack().logout();
+                        }
+                    })
             );
             var userMenu = this.browser.makeGlobalMenu('user');
             loginButton = new dijitDropDownButton(
@@ -594,9 +253,6 @@ return declare( JBPlugin,
                                     title: 'user logged in: UserName',
                                     dropDown: userMenu
                             });
-            // if add 'menu' class, button will be placed on left side of menubar instead (because of 'float: left'
-            //     styling in CSS rule for 'menu' class
-            // dojo.addClass( loginButton.domNode, 'menu' );
         }
         else  {
             loginButton = new dijitButton(
@@ -619,13 +275,14 @@ return declare( JBPlugin,
      */
     getAnnotTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
-            var tracks = this.browser.view.tracks;
-            for (var i = 0; i < tracks.length; i++)  {
-                // should be doing instanceof here, but class setup is not being cooperative
-                if (tracks[i].isWebApolloAnnotTrack)  {
-                    return tracks[i];
+            var a;
+            array.some(this.browser.view.tracks,function(track) {
+                if(track.isInstanceOf(AnnotTrack))  {
+                    a=track;
+                    return true;
                 }
-            }
+            });
+            return a;
         }
         return null;
     },
@@ -638,71 +295,22 @@ return declare( JBPlugin,
      */
     getSequenceTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
-            var tracks = this.browser.view.tracks;
-            for (var i = 0; i < tracks.length; i++)  {
-                // should be doing instanceof here, but class setup is not being cooperative
-                if (tracks[i].isWebApolloSequenceTrack)  {
-                    // console.log("seq track refseq: " + tracks[i].refSeq.name);
-                    return tracks[i];
+            var a;
+            array.some(this.browser.view.tracks,function(track) {
+                if (track.isInstanceOf(SequenceTrack))  {
+                    a=track;
+                    return true;
                 }
-            }
+            });
+            return a;
         }
         return null;
     },
 
-
-    /** ported from berkeleybop/jbrowse GenomeView.js
-      * returns char height/width on GenomeView
-      */
-    getSequenceCharacterSize: function(recalc)  {
-        var container = this.browser.container;
-        if (this.browser.view && this.browser.view.elem)  {
-            container = this.browser.view.elem;
-        }
-        if (recalc || (! this._charSize))  {
-            //            this._charSize = this.calculateSequenceCharacterSize(this.browser.view.elem);
-            this._charSize = this.calculateSequenceCharacterSize(container);
-        }
-        return this._charSize;
-    },
-
-    /**
-     * ported from berkeleybop/jbrowse GenomeView.js
-     * Conducts a test with DOM elements to measure sequence text width
-     * and height.
-     */
-    calculateSequenceCharacterSize: function( containerElement ) {
-        var widthTest = document.createElement("div");
-        widthTest.className = "wa-sequence";
-        widthTest.style.visibility = "hidden";
-        var widthText = "12345678901234567890123456789012345678901234567890";
-        widthTest.appendChild(document.createTextNode(widthText));
-        containerElement.appendChild(widthTest);
-
-        var result = {
-            width:  widthTest.clientWidth / widthText.length,
-            height: widthTest.clientHeight
-        };
-
-        containerElement.removeChild(widthTest);
-        return result;
-    },
-
-    /** utility function, given an array with objects that have label props,
-     *        return array with all objects that don't have label
-     *   D = [ { label: A }, { label: B}, { label: C } ]
-     *   E = D.removeItemWithLabel("B");
-     *   E ==> [ { label: A }, { label: C } ]
-     */
     removeItemWithLabel: function(inarray, label) {
-        var outarray = [];
-        for (var i=0; i<inarray.length; i++) {
-            var obj = inarray[i];
-            if (! (obj.label && (obj.label === label))) {
-                outarray.push(obj);
-            }
-        }
-        return outarray;
+        return array.filter(inarray,function(obj) {
+            return ! (obj.label && (obj.label === label));
+        });
     },
 
     setFavicon: function(favurl) {
@@ -726,26 +334,183 @@ return declare( JBPlugin,
 
         $head.prepend(favicon1);
         $head.prepend(favicon2);
-    }
+    },
+    createViewMenu: function() {
+        var browser=this.browser;
+        var thisB=this;
+
+        // add a global menu option for setting CDS color
+        var cds_frame_toggle = new dijitCheckedMenuItem(
+                {
+                    label: "Color by CDS frame",
+                    checked: browser.cookie("colorCdsByFrame")=="true",
+                    onClick: function(event) {
+                        if(this.get("checked")) domClass.add(win.body(), "colorCds");
+                        else domClass.remove(win.body(),"colorCds");
+                        browser.cookie("colorCdsByFrame", this.get("checked")?"true":"false");
+                    }
+                });
+        browser.addGlobalMenuItem( 'view', cds_frame_toggle );
+
+        var css_frame_menu = new dijitMenu();
+
+        css_frame_menu.addChild(
+            new dijitMenuItem({
+                    label: "Light",
+                    onClick: function (event) {
+                        browser.cookie("Scheme","Light");
+                        domClass.remove(win.body(), "Dark");
+                    }
+                }
+            )
+        );
+        css_frame_menu.addChild(
+            new dijitMenuItem({
+                    label: "Dark",
+                    onClick: function (event) {
+                        browser.cookie("Scheme","Dark");
+                        domClass.add(win.body(), "Dark");
+                    }
+                }
+            )
+        );
+
+
+        var css_frame_toggle = new dijitPopupMenuItem(
+            {
+                label: "Color Scheme",
+                popup: css_frame_menu
+            });
+
+        browser.addGlobalMenuItem('view', css_frame_toggle);
+
+        var hide_track_label_toggle = new dijitCheckedMenuItem(
+            {
+                label: "Show track label",
+                checked: (browser.cookie("showTrackLabel")||"true")=="true",
+                onClick: function(event) {
+                    thisB.showLabels(this.get("checked"));
+                    browser.cookie("showTrackLabel",this.get("checked")?"true":"false");
+                }
+            });
+
+        this.showLabels();
+        browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"showLabels",true));
+
+
+        browser.addGlobalMenuItem( 'view', hide_track_label_toggle);
+        browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
+    },
+
+
+    createHelpMenu: function() {
+        var browser=this.browser;
+        if( !browser.config.quickHelp ) {
+            browser.config.quickHelp = {
+                "title": "Web Apollo Help",
+                "content": this.defaultHelp()
+            }
+        }
+        var jbrowseUrl = "http://jbrowse.org";
+        var browser=this.browser;
+        
+        browser.addGlobalMenuItem( 'help',
+            new dijitMenuItem(
+                {
+                    id: 'menubar_powered_by_jbrowse',
+                    label: 'Powered by JBrowse',
+                    onClick: function()  { window.open(jbrowseUrl,'help_window').focus(); }
+                })
+        );
+        browser.addGlobalMenuItem( 'help',
+            new dijitMenuItem(
+                {
+                    id: 'menubar_web_service_api',
+                    label: 'Web Service API',
+                    onClick: function()  { window.open("../web_services/web_service_api.html",'help_window').focus(); }
+                })
+        );
+        browser.addGlobalMenuItem( 'help',
+            new dijitMenuItem(
+                {
+                    id: 'menubar_apollo_version',
+                    label: 'Get Version',
+                    onClick: function()  {
+                        window.open("../version.jsp",'help_window').focus();
+                    }
+                })
+        );
+
+    },
+
+
+    monkeyPatchRegexPlugin: function() {
+        var plugin='RegexSequenceSearch/Store/SeqFeature/RegexSearch';
+        require([plugin], function(RegexSearch) {
+            lang.extend(RegexSearch,{
+                translateSequence:function( sequence, frameOffset ) {
+                    var slicedSeq = sequence.slice( frameOffset );
+                    slicedSeq = slicedSeq.slice( 0, Math.floor( slicedSeq.length / 3 ) * 3);
+
+                    var translated = "";
+                    var codontable=new CodonTable();
+                    var codons=codontable.generateCodonTable(codontable.defaultCodonTable);
+                    for(var i = 0; i < slicedSeq.length; i += 3) {
+                        var nextCodon = slicedSeq.slice(i, i + 3);
+                        translated = translated + codons[nextCodon];
+                    }
+
+                    return translated;
+                }
+            });
+        });
+     },
+     setupWebapolloTrackTypes: function() {
+        var browser=this.browser;
+        var thisB=this;
+
+        // register the WebApollo track types with the browser, so
+        // that the open-file dialog and other things will have them
+        // as options
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/DraggableHTMLFeatures',
+            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/NCList',
+                                    'JBrowse/Store/SeqFeature/GFF3',
+                                    'WebApollo/Store/SeqFeature/ApolloGFF3'
+                                  ],
+            label: 'WebApollo Features'
+        });
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/DraggableAlignments',
+            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/BAM' ],
+            label: 'WebApollo Alignments'
+        });
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/SequenceTrack',
+            defaultForStoreTypes: [ 'JBrowse/Store/Sequence/StaticChunked' ],
+            label: 'WebApollo Sequence'
+        });
+
+        // transform track configs from vanilla JBrowse to WebApollo:
+        // type: "JBrowse/View/Track/HTMLFeatures" ==> "WebApollo/View/Track/DraggableHTMLFeatures"
+        array.forEach(browser.config.tracks,function(e) { thisB.trackTransformer.transform(e); });
+
+        if (!browser.config.trackSelector) {
+            browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
+        }
+        else if (browser.config.trackSelector.type == "Hierarchical") {
+            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
+        }
+        else if (browser.config.trackSelector.type == "Faceted") {
+            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
+        }
+
+
+     }
+
 
 });
 
 });
 
 });
-//var sendTrackUpdate = function(track,command){
-//    console.log('calling function '+command);
-//    if(command=="show"){
-//        console.log('trying to show the track: '+track);
-//        this.browser.publish( '/jbrowse/v1/v/tracks/show', [track] );
-//    }
-//    else
-//    if(command=="hide"){
-//        console.log('trying to hide the track: '+track);
-//        this.browser.publish( '/jbrowse/v1/v/tracks/hide', [track] );
-//    }
-//    else{
-//        console.log('cont sure what command is supposed to be: '+command);
-//    }
-//};
-

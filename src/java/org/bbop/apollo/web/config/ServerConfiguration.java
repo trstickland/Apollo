@@ -28,7 +28,6 @@ public class ServerConfiguration {
     private int defaultMinimumIntronSize;
     private int historySize;
     private String overlapperClass;
-//    private String trackNameComparatorClass;
     private String trackNameComparator;
     private UserDatabaseConfiguration userDatabase;
     private String userAuthenticationClass;
@@ -41,7 +40,6 @@ public class ServerConfiguration {
     private Map<String, AnnotationInfoEditorConfiguration> annotationInfoEditors;
 
     private ServletContext servletContext ;
-//    private Collection<AnnotationInfoEditorConfiguration> annotationInfoEditors;
 
     public ServerConfiguration(InputStream configuration) throws ParserConfigurationException, SAXException, IOException {
         throw new RuntimeException("No longer supported");
@@ -61,7 +59,6 @@ public class ServerConfiguration {
         useCDS = false;
         useMemoryStore = true;
         annotationInfoEditors = new HashMap<String, AnnotationInfoEditorConfiguration>();
-//        annotationInfoEditors = new ArrayList<AnnotationInfoEditorConfiguration>();
         init(configuration);
         configuration.close();
     }
@@ -104,24 +101,6 @@ public class ServerConfiguration {
 
     public void setOverlapperClass(String overlapperClass) {
         this.overlapperClass = overlapperClass;
-    }
-
-    /*
-    public String getTrackNameComparatorClass() {
-        return trackNameComparatorClass;
-    }
-
-    public void setTrackNameComparatorClass(String trackNameComparatorClass) {
-        this.trackNameComparatorClass = trackNameComparatorClass;
-    }
-    */
-
-    public String getTrackNameComparator() {
-        return trackNameComparator;
-    }
-
-    public void setTrackNameComparator(String trackNameComparator) {
-        this.trackNameComparator = trackNameComparator;
     }
     
     public UserDatabaseConfiguration getUserDatabase() {
@@ -197,7 +176,7 @@ public class ServerConfiguration {
     }
 
     private void init(InputStream configuration) throws ParserConfigurationException, SAXException, IOException {
-        logger.debug("init inputStrea" + configuration);
+        logger.debug("init inputStream: " + configuration);
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         DocumentBuilder db = dbf.newDocumentBuilder();
         logger.debug("going to parse");
@@ -214,7 +193,7 @@ public class ServerConfiguration {
         logger.debug("real path: " + servletContext.getRealPath("."));
         if(currentDirectory.getAbsolutePath().startsWith("/")){
             currentDirectory = new File(servletContext.getRealPath("."));
-            logger.debug("curretn directory reset: " + currentDirectory);
+            logger.debug("current directory reset: " + currentDirectory);
             logger.debug("exists: " + currentDirectory.exists());
             logger.debug("is directory: " + currentDirectory.isDirectory());
         }
@@ -230,27 +209,23 @@ public class ServerConfiguration {
         }
         logger.debug("loaded: " + loaded) ;
 
-        String dataStoreDirectoryOverride = null ;
-        String databaseUrlOverride = null ;
-        String databaseUsernameOverride = null ;
-        String databasePasswordOverride= null ;
+        String databaseUrl = null ;
+        String databaseUsername = null ;
+        String databasePassword= null ;
+        String databaseDriver = null ;
         String jbrowseDirectory = null ;
-        String organismOverride = null ;
-//        String jbrowseData = null ;
+        String organism = null ;
         if(loaded){
             logger.debug("overriden: " + loaded) ;
             jbrowseDirectory = properties.getProperty("jbrowse.data");
-            dataStoreDirectoryOverride = properties.getProperty("datastore.directory");
-            databaseUrlOverride = properties.getProperty("database.url");
-            databaseUsernameOverride = properties.getProperty("database.username");
-            databasePasswordOverride = properties.getProperty("database.password");
-            organismOverride = properties.getProperty("organism");
+            dataStoreDirectory = properties.getProperty("datastore.directory");
+            databaseUrl = properties.getProperty("database.url");
+            databaseUsername = properties.getProperty("database.username");
+            databasePassword = properties.getProperty("database.password");
+            databaseDriver = properties.getProperty("database.driver");
+            userAuthenticationClass = properties.getProperty("database.authentication");
+            organism = properties.getProperty("organism");
 
-            logger.debug("dataStoreDirectoryOverride: " + dataStoreDirectoryOverride) ;
-            logger.debug("databaseUrlOverride: " + databaseUrlOverride) ;
-            logger.debug("databaseUsernameOverride: " + databaseUsernameOverride) ;
-            logger.debug("databasePasswordOverride: " + databasePasswordOverride) ;
-            logger.debug("organismOverride: " + organismOverride) ;
         }
 
 
@@ -262,17 +237,6 @@ public class ServerConfiguration {
             gbolMappingFile = gbolMappingNode.getTextContent();
         }
 
-
-        if(dataStoreDirectoryOverride!=null){
-            dataStoreDirectory = dataStoreDirectoryOverride;
-            logger.debug("override dataStore directory: " + dataStoreDirectory);
-        }
-        else{
-            Node dataStoreDirectoryNode = doc.getElementsByTagName("datastore_directory").item(0);
-            if (dataStoreDirectoryNode != null) {
-                dataStoreDirectory = dataStoreDirectoryNode.getTextContent();
-            }
-        }
 
         Node minimumIntronSizeNode = doc.getElementsByTagName("default_minimum_intron_size").item(0);
         if (minimumIntronSizeNode != null) {
@@ -286,45 +250,7 @@ public class ServerConfiguration {
         if (overlapperClassNode != null) {
             overlapperClass = overlapperClassNode.getTextContent();
         }
-        /*
-        Node trackNameComparatorClassNode = doc.getElementsByTagName("track_name_comparator_class").item(0);
-        if (trackNameComparatorClassNode != null) {
-            trackNameComparatorClass = trackNameComparatorClassNode.getTextContent();
-        }
-        */
-        Node trackNameComparatorNode = doc.getElementsByTagName("track_name_comparator").item(0);
-        if (trackNameComparatorNode != null) {
-            trackNameComparator = trackNameComparatorNode.getTextContent();
-        }
-        Element userNode = (Element)doc.getElementsByTagName("user").item(0);
-        logger.debug("has user node: " + userNode);
-        if (userNode != null) {
-            Element databaseNode = (Element)userNode.getElementsByTagName("database").item(0);
-            logger.debug("has database node: " + databaseNode);
-            if (databaseNode != null) {
-                String driver = databaseNode.getElementsByTagName("driver").item(0).getTextContent();
-                String url = databaseUrlOverride!=null ? databaseUrlOverride : databaseNode.getElementsByTagName("url").item(0).getTextContent();
-                String userName = databaseUsernameOverride!=null ? databaseUsernameOverride : databaseNode.getElementsByTagName("username").item(0).getTextContent();
-                String password = databasePasswordOverride!=null ? databasePasswordOverride : databaseNode.getElementsByTagName("password").item(0).getTextContent();
-//                String url = databaseNode.getElementsByTagName("url").item(0).getTextContent();
-//                Node userNameNode = databaseNode.getElementsByTagName("username").item(0);
-//                if (userNameNode != null) {
-//                    userName = userNameNode.getTextContent();
-//                }
-//                Node passwordNode = databaseNode.getElementsByTagName("password").item(0);
-//                if (passwordNode != null) {
-//                    password = passwordNode.getTextContent();
-//                }
-                logger.debug("loading database with: " + driver + " " + url + " " + userName + " " + password);
-
-                userDatabase = new UserDatabaseConfiguration(driver, url, userName, password);
-                logger.debug("loaded database");
-            }
-            Element authenticationClassNode = (Element)userNode.getElementsByTagName("authentication_class").item(0);
-            if (authenticationClassNode != null) {
-                userAuthenticationClass = authenticationClassNode.getTextContent();
-            }
-        }
+        userDatabase = new UserDatabaseConfiguration(databaseDriver, databaseUrl, databaseUsername, databasePassword);
         tracks = new HashMap<String, TrackConfiguration>();
         Element tracksNode = (Element)doc.getElementsByTagName("tracks").item(0);
         if (tracksNode != null) {
@@ -336,13 +262,6 @@ public class ServerConfiguration {
                     Node nameNode = trackNode.getElementsByTagName("name").item(0);
                     if (nameNode != null) {
                         name = nameNode.getTextContent();
-                    }
-                    String organism = organismOverride;
-                    if(organism==null){
-                        Node organismNode = trackNode.getElementsByTagName("organism").item(0);
-                        if (organismNode != null) {
-                            organism = organismNode.getTextContent();
-                        }
                     }
 
                     String translationTable = null;
@@ -375,28 +294,23 @@ public class ServerConfiguration {
                     tracks.put(name, new TrackConfiguration(name, organism, translationTable, sourceFeature, spliceDonorSites, spliceAcceptorSites));
                 }
             }
-//            Node refSeqsNode = tracksNode.getElementsByTagName("refseqs").item(0);
             Node annotationTrackNameNode = tracksNode.getElementsByTagName("annotation_track_name").item(0);
             Node organismNode = tracksNode.getElementsByTagName("organism").item(0);
             Node sequenceTypeNode = tracksNode.getElementsByTagName("sequence_type").item(0);
             Node translationTableNode = tracksNode.getElementsByTagName("translation_table").item(0);
             Node spliceSitesNode = tracksNode.getElementsByTagName("splice_sites").item(0);
-//            if (refSeqsNode != null && annotationTrackNameNode != null && organismNode != null && sequenceTypeNode != null) {
-                Set<String> spliceDonorSites = parseSpliceDonorSites((Element)spliceSitesNode);
-                Set<String> spliceAcceptorSites = parseSpliceAcceptorSites((Element)spliceSitesNode);
-                try {
+            Set<String> spliceDonorSites = parseSpliceDonorSites((Element)spliceSitesNode);
+            Set<String> spliceAcceptorSites = parseSpliceAcceptorSites((Element)spliceSitesNode);
+            try {
 
-                    String refSeqFile = jbrowseDirectory.concat("/seq/refSeqs.json");
-//                    parseRefSeqs(refSeqsNode.getTextContent(), annotationTrackNameNode.getTextContent(), organismNode.getTextContent(), sequenceTypeNode.getTextContent(),
-//                            translationTableNode != null ? translationTableNode.getTextContent() : null, spliceDonorSites, spliceAcceptorSites, tracks);
-                    parseRefSeqs(refSeqFile, annotationTrackNameNode.getTextContent(), organismOverride!=null ? organismOverride : organismNode.getTextContent(), sequenceTypeNode.getTextContent(),
-                            translationTableNode != null ? translationTableNode.getTextContent() : null, spliceDonorSites, spliceAcceptorSites, tracks);
-                }
-                catch (Exception e) {
-                    logger.debug("ERROR loading seq data:");
-                    e.printStackTrace();
-                }
-//            }
+                String refSeqFile = jbrowseDirectory.concat("/seq/refSeqs.json");
+                parseRefSeqs(refSeqFile, annotationTrackNameNode.getTextContent(), organism, sequenceTypeNode.getTextContent(),
+                        translationTableNode != null ? translationTableNode.getTextContent() : null, spliceDonorSites, spliceAcceptorSites, tracks);
+            }
+            catch (Exception e) {
+                logger.debug("ERROR loading seq data:");
+                e.printStackTrace();
+            }
         }
         Element cannedCommentsNode = (Element)doc.getElementsByTagName("canned_comments").item(0);
         if (cannedCommentsNode != null) {

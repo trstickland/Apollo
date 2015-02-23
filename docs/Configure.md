@@ -1,6 +1,6 @@
 ## WebApollo Configuration
 
-<a href="https://github.com/GMOD/Apollo/blob/master/docs/Configure.md">On GitHub</a>
+View <a href="https://github.com/GMOD/Apollo/blob/master/docs/Configure.md">On GitHub</a>
 
 WebApollo's basic configuration is simply giving it parameters in the config.properties file but more extensive configuration can be added to the XML configuration files as well.
 
@@ -105,7 +105,14 @@ but uses a lot less memory - great for annotation rich genomes -->
 Defines whether the internal data store is purely a memory one or a hybrid memory/disk store. The memory store provides faster performance at the cost of more memory. The hybrid store provides a little slower performance but uses a lot less memory, so it's a good option for annotation rich genomes. Set to `true` to use the memory store and `false` to use the hybrid one.
 
 
+### Logging configuration
 
+Log4j2 can be configured to one of the pre-configured sample files, or configured to a custom setting, or can be left untouched.
+The Log4j2 presets include:
+
+- sample_log4j2.json - outputs to ~/logs/webapollo.log
+- sample_log4j2_catalina.json - outputs to $CATALINA_HOME/logs/webapollo.log
+- sample_log4j2-test.json - outputs to the console
 
 ### Database configuration
 
@@ -180,9 +187,9 @@ Now let’s look at the other elements in the `user` element.
 Defines how user authentication is handled. This points to a class implementing the `org.bbop.apollo.web.user.UserAuthentication` interface. This allows you to implement any type of authentication you’d like (e.g., LDAP). Currently available options are:
 
 -   `org.bbop.apollo.web.user.localdb.LocalDbUserAuthentication`
-    -   Uses the user permission database to also store authentication information, meaning it stores user passwords in the database
+    -   Uses the user permission database to also store authentication information, meaning it stores user passwords in the database. This is the default before 1.0.4 of WebApollo. It requires using the --unencrypted option for add_user.pl for versions 1.0.4+.
 - `org.bbop.apollo.web.user.localdb.EncryptedLocalDbUserAuthentication`
-    -   Uses the user permission database to also store authentication information, but encrypts user passwords using PBKDF2. The add_user.pl script accepts a -e or --encrypted argument to accomodate this, as well as the change_password.pl script. 
+    -   Uses the user permission database to also store authentication information, but encrypts user passwords using PBKDF2. This is the default since 1.0.4 of WebApollo. It requires using th --encrypted option for add_user.pl previous to 1.0.4.
 -   `org.bbop.apollo.web.user.browserid.BrowserIdUserAuthentication`
     -   Uses Mozilla’s [BrowserID](https://browserid.org) service for authentication. This has the benefits of offloading all authentication security to Mozilla and allows one account to have access to multiple resources (as long as they have BrowserID support). Being that the service is provided through Mozilla, it will require users to create a BrowserID account
 
@@ -904,9 +911,17 @@ Note that the generated files will reside in that directory indefinitely to allo
 
 `$ tools/cleanup/remove_temporary_files.sh -d TOMCAT_WEBAPPS_DIR/WebApollo/tmp -m 60`
 
-#### Chado configuration
+#### Chado setup
 
-The Chado data adapter will allow writing the current annotations to a Chado database. For more information about Chado, see  can get more information about the Chado at [GMOD Chado page](http://gmod.org/wiki/Chado). The configuration is stored in `src/main/webapp/config/chado_config.xml`. Let’s take a look at the configuration file:
+The Chado data adapter will allow writing the current annotations to a Chado database.
+
+##### Chado installation
+
+User's wanting to use this will have to setup Chado themselves. The installation instructions can be found at the [GMOD wiki](http://gmod.org/wiki/Chado). Alternatively, instead of using the standard setup, pre-compiled Chado schemas pre-loaded with ontologies that are available from the Center for Phage Technology [here](https://cpt.tamu.edu/computer-resources/chado-prebuilt-schema/). This can be used to speed up the Chado setup substantially.
+
+##### Chado configuration
+
+The configuration for Chado is stored in `src/main/webapp/config/chado_config.xml` and is currently very minimal. Let’s take a look at the configuration file:
 
 ``` xml
 <?xml version="1.0" encoding="UTF-8"?>

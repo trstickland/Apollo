@@ -3,14 +3,14 @@
     "configuration": {
         "name": "Default",
         "properties": {
-            "property": {
+            "property": [{
                 "name":"Directory",
                 "value":"${sys:user.home}/logs"
-            }
-            //,"property": {
-            //    "name":"FileName",
-            //    "value":"test.log"
-            //}
+            },
+            {
+                "name":"FileName",
+                "value":"webapollo.log"
+            }]
         },
         "appenders": {
             "Console": {
@@ -23,7 +23,7 @@
             "RollingFile": {
                 "name":"File",
                 "fileName":"${Directory}/${FileName}",
-                "filePattern":"${Directory}/${date:yyyy-MM}/test-%d{MM-dd-yyyy}-%i.log.gz",
+                "filePattern":"${Directory}/${date:yyyy-MM}/webapollo-%d{MM-dd-yyyy}-%i.log.gz",
                 "PatternLayout": {
                     "pattern":"%d %p %logger{36} [%t] %m%n"
                 },
@@ -40,12 +40,12 @@
         "loggers": {
             "root": {
                 "level":"debug",
-                "appender-ref": {
+                "appender-ref": [{
                     "ref":"Console"
-                }
-                //, "appender-ref": {
-                //    "ref":"File"
-                //}
+                },
+                 {
+                    "ref":"File"
+                }]
             }
         }
     }

@@ -1,6 +1,6 @@
 ## Prerequisites
 
-<a href="https://github.com/GMOD/Apollo/blob/master/docs/Developer.md">On GitHub</a>
+View <a href="https://github.com/GMOD/Apollo/blob/master/docs/Developer.md">On GitHub</a>
 
 
 ### Client Prerequisites
@@ -19,15 +19,13 @@ quickest way to take care of pre-requisites.
         supported: Tomcat 7]
     -   Java 7+
     -   Maven3+ (most package managers will have this)
+    -   Ant 1.8+ (most package managers will have this)
     -   Relational Database Management System [officially supported:
         PostgreSQL]
     -   Git
--   Perl prerequisites:
-    -   Web Apollo will automatically try to install all perl-pre-requisites using install_jbrowse.sh
-    -   If you experience problems with this script, please review setup.log
 -   Data generation pipeline prerequisites (see [JBrowse
     prerequisites](http://gmod.org/wiki/JBrowse_Configuration_Guide) for more
-    information on its prerequisites)
+    information)
     -   System packages
         -   libpng12-0 (optional, for JBrowse imagetrack)
         -   libpng12-dev (optional, for JBrowse imagetrack)
@@ -37,10 +35,25 @@ quickest way to take care of pre-requisites.
         -   zlib-devel (RedHat/CentOS)
         -   libexpat1-dev (Debian/Ubuntu)
         -   expat-dev (RedHat/CentOS)
+-   Perl prerequisites:
+    -   Perl pre-requesites will be automatically installed by `install_jbrowse.sh`
+    -   If you experience problems with this perl setup, please review setup.log and post to mailing list
 -   Sequence search (optional)
     -   Blat (download
         [Linux](http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/)
         or
         [OSX](http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.x86_64/|Mac)
         binaries)
+
+#### Automatically get prerequisites
+
+These commands will try to get everything in one bang for several system types.
+
+    # install system prerequisites (debian/ubuntu)
+    sudo apt-get install openjdk-7-jdk libexpat1-dev postgresql postgresql-server-dev-all maven tomcat7 git
+    # install system prerequisites (centOS/redhat)
+    sudo yum install postgresql postgresql-server postgresql-devel maven expat-devel tomcat git
+    # install system prerequisites (macOSX/homebrew), read the postgresql start guide
+    brew install maven postgresql wget tomcat git
+
 
