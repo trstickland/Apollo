@@ -96,8 +96,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
         this.gview.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
             if (currRegion.ref != this.refSeq.name) {
-                if (this.listener && this.listener.fired == -1 ) {
-                    this.listener.cancel();
+                if (this.listener) {
+                    this.listener.close();
                 }
             }
         }));
@@ -304,7 +304,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             //console.log('location: ' + location);
 
             client.subscribe("/topic/AnnotationNotification", function (message) {
-                //console.log('NOTIFIED of ANNOT CHANGE');
+                console.log('NOTIFIED of ANNOT CHANGE',message);
 
                 // for some reason have to parse this twice
                 //console.log('input message: '+message);
@@ -314,9 +314,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 var changeData;
 
                 try {
-                    //console.log('input JSON.pare(JSON.parse(message.body)): '+JSON.parse(JSON.parse(message.body)));
-
                     changeData = JSON.parse(JSON.parse(message.body));
+                    console.log(changeData);
 
                     if (track.verbose_server_notification) {
                         console.log(changeData.operation + " command from server: ");
@@ -3067,26 +3066,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         return options;
     },
 
-    executeUpdateOperation: function(postData, loadCallback) {
-        var track = this;
-        if (!this.listener || this.listener.fired != -1 ) {
-            this.handleError({responseText: '{ error: "Server connection error - try reloading the page" }'});
-            return;
-        }
-        xhr(context_path + "/AnnotationEditorService", {
-            handleAs: "json",
-            data: JSON.stringify(postData),
-            method: "post"
-        }).then(function(response, ioArgs) {
-            if (loadCallback) {
-                loadCallback(response);
-            }
-            if (response && response.alert) {
-                alert(response.alert);
-            }
-        }, function(response, ioArgs) {
-            track.handleError({responseText: response.response.text });
-        });
+    executeUpdateOperation: function(postData) {
+        console.log("JSON",JSON.stringify(postData));
+        this.client.send("/app/AnnotationNotification", {"content-type":"text/plain"}, JSON.stringify(postData));
     },
 
     isProteinCoding: function(feature) {
