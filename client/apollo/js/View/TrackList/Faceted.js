@@ -10,7 +10,7 @@ function(declare,Faceted) {
             //Remove the tracks from the metadata descriptions
             for(var index in this.trackDataStore.identIndex) {
                 if(this.trackDataStore.identIndex[index]["track type"]=="WebApollo/View/Track/AnnotTrack" || 
-                   this.trackDataStore.identIndex[index]["track type"]=="WebApollo/View/Track/AnnotSequenceTrack") {
+                   this.trackDataStore.identIndex[index]["track type"]=="WebApollo/View/Track/SequenceTrack") {
                     delete this.trackDataStore.identIndex[index];
                     this.trackDataStore.facetIndexes.itemCount--;
                 }
