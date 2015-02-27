@@ -1,2 +1,10 @@
 language: groovy
-script: ./grailsw refresh-dependencies --stacktrace && ./grailsw test-app --stacktrace
+script:
+    cp -R client/apollo src/jbrowse/plugins/WebApollo
+    cd src/jbrowse
+    node src/dojo/dojo.js load=build \
+                       --require "src/JBrowse/init.js" \
+                       --profile "plugins/WebApollo/js/WebApollo" \
+                       --releaseDir "built";
+    cd -
+    ./grailsw refresh-dependencies --stacktrace && ./grailsw test-app --stacktrace
