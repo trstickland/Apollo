@@ -177,8 +177,8 @@ class FeatureService {
         Sequence sequence = Sequence.findByName(trackName)
         println "# SEQUENCEs: ${Sequence.count}"
         println "FIRST SEQUENCE: ${Sequence.first().name}"
-        println "FIRST SEQUENCE roganism: ${Sequence.first().organism.commonName}"
-        println "organism name: ${sequence.organism.commonName}"
+//        println "FIRST SEQUENCE roganism: ${Sequence.first()?.organism.commonName}"
+//        println "organism name: ${sequence.organism.commonName}"
 //        Organism organism = sequence.organism
 
 //        FeatureLazyResidues featureLazyResidues = FeatureLazyResidues.findByName(trackName)
@@ -319,7 +319,7 @@ class FeatureService {
      * @return
      */
     Feature getTopLevelFeature(Feature feature) {
-        Collection<Feature> parents = feature?.childFeatureRelationships.parentFeature
+        Collection<Feature> parents = feature?.childFeatureRelationships*.parentFeature
         if (parents.size() > 0) {
             return getTopLevelFeature(parents.iterator().next());
         } else {
@@ -409,7 +409,7 @@ class FeatureService {
 
     def removeExonOverlapsAndAdjacencies(Transcript transcript) {
         Collection<Exon> exons = transcriptService.getExons(transcript)
-        if (transcriptService.getExons(transcript).size() <= 1) {
+        if (!exons || exons?.size() <= 1) {
             return;
         }
         List<Exon> sortedExons = new LinkedList<Exon>(exons);
@@ -1089,6 +1089,7 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
 //            gsolFeature.setOrganism(organism);
 
             // TODO: JSON type feature not set
+            println "entering conversion method"
             JSONObject type = jsonFeature.getJSONObject(FeatureStringEnum.TYPE.value);
             println "JSON FEATURE ${jsonFeature.toString()}"
             println "type ${type}"
@@ -1124,7 +1125,7 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
                 FeatureLocation featureLocation = convertJSONToFeatureLocation(jsonLocation, sequence)
                 featureLocation.sequence = sequence
                 featureLocation.feature = gsolFeature
-                featureLocation.save(failOnError: true)
+                featureLocation.save()
                 gsolFeature.addToFeatureLocations(featureLocation);
             }
 
@@ -1210,7 +1211,7 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
             }
         }
         catch (JSONException e) {
-            log.error(e)
+            log.error("Exception creating Feature from JSON ${jsonFeature}",e)
             return null;
         }
         return gsolFeature;

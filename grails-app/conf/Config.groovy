@@ -167,6 +167,8 @@ log4j.main = {
 //grails.gorm.default.constraints = {
 //    '*'(nullable: true)
 //}
+grails.gorm.failOnError = true
+//grails.datastore.gorm.GormInstanceApi.copy = cloneForDomains ;
 
 apollo.jbrowse.data.directory = "/opt/apollo/jbrowse/data"
 

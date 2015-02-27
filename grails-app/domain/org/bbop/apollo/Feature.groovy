@@ -10,7 +10,7 @@ class Feature implements Ontological{
 
     static constraints = {
         name nullable: false
-        uniqueName nullable: true
+        uniqueName nullable: false
         dbxref nullable: true
         sequenceLength nullable: true
         md5checksum nullable: true
@@ -61,6 +61,12 @@ class Feature implements Ontological{
             ,featureGenotypes: "feature"
             ,featureLocations: "feature"
     ]
+    
+    static mapping = {
+        childFeatureRelationships cascade: 'all-delete-orphan'
+        parentFeatureRelationships cascade: 'all-delete-orphan'
+        featureLocations cascade: 'all-delete-orphan'
+    }
 
     static belongsTo = [
             User

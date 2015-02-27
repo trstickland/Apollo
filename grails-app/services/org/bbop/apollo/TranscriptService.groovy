@@ -123,6 +123,11 @@ class TranscriptService {
         return (Collection<Transcript>) featureRelationshipService.getChildrenForFeatureAndTypes(gene,ontologyIds as String[])
     }
 
+
+    List<Transcript> getTranscriptsSortedByFeatureLocation(Gene gene,boolean sortByStrand) {
+        return getTranscripts(gene).sort(true,new FeaturePositionComparator<Transcript>(sortByStrand))
+    }
+
     public void setFmin(Transcript transcript, Integer fmin) {
         transcript.getFeatureLocation().setFmin(fmin);
         Gene gene = getGene(transcript)
@@ -234,7 +239,7 @@ class TranscriptService {
 //        } else {
 //            addFeature(splitTranscript);
 //        }
-        Gene gene = getGene(transcript)
+        Gene gene = getGene(transcrip)
         if(gene){
             featureService.addTranscriptToGene(gene,splitTranscript)
         }
@@ -262,5 +267,77 @@ class TranscriptService {
         }
         
         return splitTranscript
+    }
+
+    /**
+     * Duplicate a transcript.  Adds it to the parent gene if it is set.
+     *
+     * @param transcript - Transcript to be duplicated
+     */
+    public Transcript duplicateTranscript(Transcript transcript) {
+        Transcript duplicate = (Transcript) transcript.generateClone(transcript);
+        duplicate.name = transcript.name+"-copy"
+        duplicate.uniqueName = nameService.generateUniqueName(transcript)
+       
+        Gene gene =  getGene(transcript)
+        if (gene) {
+            featureService.addTranscriptToGene(gene,duplicate)
+            gene.save()
+        }
+        // copy exons
+        for (Exon exon : getExons(transcript)) {
+            Exon duplicateExon = (Exon) exon.generateClone()
+            duplicateExon.name = exon.name + "-copy"
+            duplicateExon.uniqueName = nameService.generateUniqueName(duplicateExon)
+            addExon(duplicate,duplicateExon)
+        }
+        // copy CDS
+        CDS cds = getCDS(transcript)
+        if (cds) {
+            CDS duplicateCDS = (CDS) cds.generateClone()
+            duplicateCDS.name = cds.name + "-copy"
+            duplicateCDS.uniqueName = nameService.generateUniqueName(duplicateCDS)
+            setCDS(duplicate,cds)
+        }
+
+
+        duplicate.save()
+        
+        return duplicate
+    }
+
+    def mergeTranscripts(Transcript transcript1, Transcript transcript2) {
+        // Merging transcripts basically boils down to moving all exons from one transcript to the other
+        
+        for (Exon exon : getExons(transcript2)) {
+            exonService.deleteExon(transcript2,exon)
+            addExon(transcript1,exon)
+        }
+        transcript1.save()
+        Gene gene1 = getGene(transcript1)
+        Gene gene2 = getGene(transcript2)
+        if (gene1) {
+            gene1.save()
+        }
+        // if the parent genes aren't the same, this leads to a merge of the genes
+        if (gene1 && gene2) {
+            if (gene1!=gene2) {
+                List<Transcript> gene2Transcripts = getTranscripts(gene2)
+                for (Transcript transcript : gene2Transcripts) {
+                    if (transcript!=transcript2) {
+                        deleteTranscript(gene2,transcript)
+                        featureService.addTranscriptToGene(gene1,transcript)
+                    }
+                }
+                featureService.deleteFeature(gene2)
+            }
+        }
+        // Delete the empty transcript from the gene
+        if (gene2) {
+            deleteTranscript(gene2, transcript2);
+        } else {
+            featureService.deleteFeature(transcript2);
+        }
+        featureService.removeExonOverlapsAndAdjacencies(transcript1);
     }
 }

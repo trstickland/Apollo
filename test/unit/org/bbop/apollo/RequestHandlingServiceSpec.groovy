@@ -1,5 +1,6 @@
 package org.bbop.apollo
 
+import grails.test.mixin.Mock
 import grails.test.mixin.TestFor
 import spock.lang.Specification
 
@@ -7,6 +8,7 @@ import spock.lang.Specification
  * See the API for {@link grails.test.mixin.services.ServiceUnitTestMixin} for usage instructions
  */
 @TestFor(RequestHandlingService)
+@Mock([Sequence, FeatureLocation, Feature,MRNA])
 class RequestHandlingServiceSpec extends Specification {
 
     def setup() {
@@ -15,6 +17,8 @@ class RequestHandlingServiceSpec extends Specification {
     def cleanup() {
     }
 
-    void "test something"() {
+    def "something to test"(){
+        
+        
     }
 }
