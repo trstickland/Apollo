@@ -1,6 +1,6 @@
 language: groovy
 before_install:
-    - git submodule update --recursive
+    - git submodule update --init --recursive
 script:
     - cp -R client/apollo src/jbrowse/plugins/WebApollo
     - cd src/jbrowse
