@@ -82,18 +82,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         this.annot_under_mouse = null;
 
 
-        this.verbose_create = false;
-        this.verbose_add = false;
-        this.verbose_delete = false;
-        this.verbose_drop = false;
-        this.verbose_click = false;
-        this.verbose_resize = false;
-        this.verbose_mousedown = false;
-        this.verbose_mouseenter = false;
-        this.verbose_mouseleave = false;
-        this.verbose_render = false;
-        this.verbose_server_notification = false;
-
         this.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
             if (currRegion.ref != this.refSeq.name) {
                 if (this.listener) {
@@ -224,11 +212,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         // https://github.com/zyro23/grails-spring-websocket
         this.listener = new SockJS("/apollo/stomp");
         this.client = Stomp.over(this.listener);
-        this.client.debug = function(str){
-            if(this.verbose_server_notification){
-                console.log(str);
-            }
-        };
         var client = this.client;
         var track = this;
         var browser = this.browser;
@@ -315,10 +298,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                     changeData = JSON.parse(JSON.parse(message.body));
                     console.log(changeData);
 
-                    if (track.verbose_server_notification) {
-                        console.log(changeData.operation + " command from server: ");
-                        console.log(JSON.stringify(changeData));
-                    }
 
                     if (changeData.operation == "ADD") {
                         if (changeData.sequenceAlterationEvent) {
@@ -444,13 +423,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 },
                 out: function(event, ui)  {
                     track.annot_under_mouse = null;
-                },
-                drop: function(event, ui)  {
-                    
-                    if (track.verbose_drop)  {
-                        console.log("dropped feature on annot:");
-                        console.log(featDiv);
-                    }
                 }
             } )
                 .click(function(event){
@@ -515,11 +487,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     onFeatureMouseDown: function(event) {
 
         this.last_mousedown_event = event;
-        var ftrack = this;
-        if (ftrack.verbose_selection || ftrack.verbose_drag)  {
-            console.log("AnnotTrack.onFeatureMouseDown called, genome coord: " + this.getGenomeCoord(event));
-        }
-
         this.handleFeatureSelection(event);
     },
 
@@ -530,8 +497,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     onAnnotMouseDown: function(event)  {
         var track = this;
         // track.last_mousedown_event = event;
-        var verbose_resize = track.verbose_resize;
-        if (verbose_resize || track.verbose_mousedown)  { console.log("AnnotTrack.onAnnotMouseDown called"); }
         event = event || window.event;
         var elem = (event.currentTarget || event.srcElement);
         var featdiv = track.getLowestFeatureDiv(elem);
@@ -543,19 +508,10 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
     makeResizable: function(featdiv) {
         var track = this;
-        var verbose_resize = this.verbose_resize;
         if (featdiv && (featdiv != null))  {
             if (dojo.hasClass(featdiv, "ui-resizable"))  {
-                if (verbose_resize) {
-                    console.log("already resizable");
-                    console.log(featdiv);
-                }
             }
             else {
-                if (verbose_resize)  {
-                    console.log("making annotation resizable");
-                    console.log(featdiv);
-                }
                 var scale = track.gview.bpToPx(1);
                 
                 var gridvals=[scale];
@@ -566,12 +522,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                     grid: gridvals,
 
                     stop: function(event, ui)  {
-                        if( verbose_resize ) {
-                            console.log("resizable.stop() called, event:");
-                            console.dir(event);
-                            console.log("ui:");
-                            console.dir(ui);
-                        }
                         var oldPos = ui.originalPosition;
                         var newPos = ui.position;
                         var oldSize = ui.originalSize;
@@ -582,12 +532,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                         var newRightEdge = newPos.left + newSize.width;
                         var rightDeltaPixels = newRightEdge - oldRightEdge;
                         var rightDeltaBases = Math.round(track.gview.pxToBp(rightDeltaPixels));
-                        if (verbose_resize)  {
-                            console.log("left edge delta pixels: " + leftDeltaPixels);
-                            console.log("left edge delta bases: " + leftDeltaBases);
-                            console.log("right edge delta pixels: " + rightDeltaPixels);
-                            console.log("right edge delta bases: " + rightDeltaBases);
-                        }
                         var subfeat = ui.originalElement[0].subfeature;
 
                         var fmin = subfeat.get('start') + leftDeltaBases;
@@ -617,14 +561,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
      * conflicts with mouse-down selection
      */
     onFeatureClick: function(event) {
-
-        if (this.verbose_click)  { console.log("in AnnotTrack.onFeatureClick"); }
         event = event || window.event;
         var elem = (event.currentTarget || event.srcElement);
         var featdiv = this.getLowestFeatureDiv( elem );
-        if (featdiv && (featdiv != null))  {
-            if (this.verbose_click)  { console.log(featdiv); }
-        }
     },
 
     addToAnnotation: function(annot, feature_records)  {
@@ -698,39 +637,25 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     makeTrackDroppable: function() {
         var target_track = this;
         var target_trackdiv = target_track.div;
-        if (target_track.verbose_drop)  {
-            console.log("making track a droppable target: ");
-            console.log(this);
-            console.log(target_trackdiv);
-        }
         $(target_trackdiv).droppable(  {
             // only accept draggables that are selected feature divs
             accept: ".selected-feature",   
             
             over: function(event, ui) {
                 target_track.track_under_mouse_drag = true;
-                if (target_track.verbose_drop) { console.log("droppable entered AnnotTrack") };
             },
             out: function(event, ui) {
                 target_track.track_under_mouse_drag = false;
-                if (target_track.verbose_drop) { console.log("droppable exited AnnotTrack") };
             },
             deactivate: function(event, ui)  {
-                if (target_track.verbose_drop)  { console.log("draggable deactivated"); }
-
                 var dropped_feats = target_track.webapollo.featSelectionManager.getSelection();
                 // problem with making individual annotations droppable, so
                 // checking for "drop" on annotation here,
                 // and if so re-routing to add to existing annotation
                 if (target_track.annot_under_mouse != null)  {
-                    if (target_track.verbose_drop)  {
-                        console.log("draggable dropped onto annot: ");
-                        console.log(target_track.annot_under_mouse.feature);
-                    }
                     target_track.addToAnnotation(target_track.annot_under_mouse.feature, dropped_feats);
                 }
                 else if (target_track.track_under_mouse_drag) {
-                    if (target_track.verbose_drop)  { console.log("draggable dropped on AnnotTrack"); }
                     target_track.createAnnotations(dropped_feats);
                 }
                 // making sure annot_under_mouse is cleared
@@ -740,7 +665,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 target_track.track_under_mouse_drag = false;
             }
         } );
-        if( target_track.verbose_drop) { console.log("finished making droppable target"); }
     },
 
     createAnnotations: function(selection_records)  {
@@ -1131,10 +1055,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         }
         if (features.length == 0) {
             return;
-        }
-        if (this.verbose_delete)  {
-            console.log("annotations to delete:");
-            console.log(features);
         }
         var postData = { "track": trackName, "features": features, "operation": "delete_feature" };
         track.executeUpdateOperation(postData);

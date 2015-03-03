@@ -32,16 +32,7 @@ define( [
 
 /*  Subclass of FeatureTrack that allows features to be selected,
     and dragged and dropped into the annotation track to create annotations.
-
-    WARNING:
-    for selection to work for features that cross block boundaries, z-index of feature style MUST be set, and must be > 0
-    otherwise what happens is:
-          feature div inherits z-order from parent, so same z-order as block
-          so feature div pixels may extend into next block, but next block draws ON TOP OF IT (assuming next block added
-          to parent after current block).  So events over part of feature div that isn't within it's parent block will never
-          reach feature div but instead be triggered on next block
-    This issue will be more obvious if blocks have background color set since then not only will selection not work but
-       part of feature div that extends into next block won't even be visible, since next block background will render over it
+    Note: for selection to work for features that cross block boundaries, z-index of feature style MUST be set, and must be > 0
  */
 
 return declare( HTMLFeatureTrack,
@@ -145,7 +136,7 @@ return declare( HTMLFeatureTrack,
                       if (! (target.feature || target.subfeature))  {  // event not on feature, so must be on whitespace
                           var xup = event.pageX;
                           var yup = event.pageY;
-                          // if click in whitespace without dragging (no movement between mouse down and mouse up,
+                          // if click in whitespace without dragging (no movement between mouse down and mouse up),
                           //    and no shift modifier,
                           //    then deselect all
                           var eventModifier = event.shiftKey || event.altKey || event.metaKey || event.ctrlKey;
@@ -252,8 +243,8 @@ return declare( HTMLFeatureTrack,
         var featdiv = this.inherited( arguments );
         if( featdiv )  {  // just in case featDiv doesn't actually get created
 
-        var $featdiv = $(featdiv);
-        $featdiv.bind("mousedown", dojo.hitch( this, 'onFeatureMouseDown') );
+            var $featdiv = $(featdiv);
+            $featdiv.bind("mousedown", dojo.hitch( this, 'onFeatureMouseDown') );
             $featdiv.bind("dblclick",  dojo.hitch( this, 'onFeatureDoubleClick') );
             if (this.feature_context_menu  && (! this.has_custom_context_menu)) {
                 this.feature_context_menu.bindDomNode(featdiv);
