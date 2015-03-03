@@ -299,7 +299,6 @@ return declare( [JBPlugin, HelpMixin],
                     }
                 })
         );
-        this.createNavigationOptions();
         this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
 
         // move Tool menu in front of Help menu

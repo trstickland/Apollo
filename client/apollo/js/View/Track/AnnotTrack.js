@@ -94,7 +94,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         this.verbose_render = false;
         this.verbose_server_notification = false;
 
-        this.gview.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
+        this.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
             if (currRegion.ref != this.refSeq.name) {
                 if (this.listener) {
                     this.listener.close();
@@ -102,14 +102,14 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             }
         }));
 
-        if(!this.gview.browser._keyBoardShortcuts)
+        if(!this.browser._keyBoardShortcuts)
         {
-            this.gview.browser.setGlobalKeyboardShortcut('[', this, 'scrollToPreviousEdge');
-            this.gview.browser.setGlobalKeyboardShortcut(']', this, 'scrollToNextEdge');
+            this.browser.setGlobalKeyboardShortcut('[', this, 'scrollToPreviousEdge');
+            this.browser.setGlobalKeyboardShortcut(']', this, 'scrollToNextEdge');
         
-            this.gview.browser.setGlobalKeyboardShortcut('}', this, 'scrollToNextTopLevelFeature');
-            this.gview.browser.setGlobalKeyboardShortcut('{', this, 'scrollToPreviousTopLevelFeature');
-            this.gview.browser._keyBoardShortcuts=true;
+            this.browser.setGlobalKeyboardShortcut('}', this, 'scrollToNextTopLevelFeature');
+            this.browser.setGlobalKeyboardShortcut('{', this, 'scrollToPreviousTopLevelFeature');
+            this.browser._keyBoardShortcuts=true;
         }
         
         this.topLevelParents = {};
@@ -119,8 +119,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var utrClass;
         var parentType = subfeature.parent().afeature.parent_type;
         if (!this.isProteinCoding(subfeature.parent())) {
-            // utrClass = parentType && parentType.name == "pseudogene" ? "pseudogene" :
-            // subfeature.parent().get("type");
             var clsName = parentType && parentType.name == "pseudogene" ? "pseudogene" : subfeature.parent().get("type");
             var cfg = this.config.style.alternateClasses[clsName];
             utrClass = cfg.className;
@@ -233,7 +231,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         };
         var client = this.client;
         var track = this;
-        var browser = this.gview.browser;
+        var browser = this.browser;
 
 
         if(typeof window.parent.getEmbeddedVersion == 'function') {
@@ -267,11 +265,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
                     if (command == "show") {
                         //console.log('trying to show the track: ' + trackInfo);
-                        track.gview.browser.publish('/jbrowse/v1/v/tracks/show', [browser.trackConfigsByName[trackInfo.label]]);
+                        track.browser.publish('/jbrowse/v1/v/tracks/show', [browser.trackConfigsByName[trackInfo.label]]);
                     }
                     else if (command == "hide") {
                         //console.log('trying to hide the track: '+trackInfo);
-                        track.gview.browser.publish('/jbrowse/v1/v/tracks/hide', [browser.trackConfigsByName[trackInfo.label]]);
+                        track.browser.publish('/jbrowse/v1/v/tracks/hide', [browser.trackConfigsByName[trackInfo.label]]);
                     }
                     else if (command == "list") {
                         //console.log('AnnotTrack:: calling sending tracks');
@@ -1671,7 +1669,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     searchSequence: function() {
         var track = this;
         var starts = new Object();
-        var browser = track.gview.browser;
+        var browser = track.browser;
         for (i in browser.allRefs) {
             var refSeq = browser.allRefs[i];
             starts[refSeq.name] = refSeq.start;
@@ -1685,13 +1683,13 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                     end: fmax
             };
             if (id == track.refSeq.name) {
-                var highlightSearchedRegions = track.gview.browser.config.highlightSearchedRegions;
+                var highlightSearchedRegions = track.browser.config.highlightSearchedRegions;
                 browser.config.highlightSearchedRegions = true;
                 browser.showRegionWithHighlight(locobj);
                 browser.config.highlightSearchedRegions = highlightSearchedRegions;
             }
             else {
-                var highlightSearchedRegions = track.gview.browser.config.highlightSearchedRegions;
+                var highlightSearchedRegions = track.browser.config.highlightSearchedRegions;
                 browser.config.highlightSearchedRegions = true;
                 browser.showRegionWithHighlight(locobj);
                 browser.config.highlightSearchedRegions = highlightSearchedRegions;
@@ -2004,7 +2002,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     
     initLoginMenu: function() {
         var track = this;
-        var browser = this.gview.browser;
+        var browser = this.browser;
         if (this.permission)  {   // permission only set if permission request
                                     // succeeded
             browser.addGlobalMenuItem( 'user',
