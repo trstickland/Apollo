@@ -28,12 +28,35 @@ define( [
             'dojo/store/Memory',
             'dojo/data/ObjectStore'
         ],
-        function( declare, autocomplete,
-          dijitMenu, dijitMenuItem, dijitMenuSeparator , dijitPopupMenuItem, dijitButton,
-          dijitTextBox, dijitValidationTextBox, dijitRadioButton,
-          dojoxDialogSimple, dojoxDataGrid, dojoItemFileWriteStore, dijit,
-          DraggableFeatureTrack, JSONUtils, Permission, SequenceSearch, EUtils, SequenceOntologyUtils,
-          SimpleFeature, Util, Layout, xhr, FormatUtils, Select, Memory, ObjectStore ) {
+        function( declare,
+                autocomplete,
+                dijitMenu,
+                dijitMenuItem,
+                dijitMenuSeparator,
+                dijitPopupMenuItem,
+                dijitButton,
+                dijitTextBox,
+                dijitValidationTextBox,
+                dijitRadioButton,
+                dojoxDialogSimple,
+                dojoxDataGrid,
+                dojoItemFileWriteStore,
+                dijit,
+                DraggableFeatureTrack,
+                JSONUtils,
+                Permission,
+                SequenceSearch,
+                EUtils,
+                SequenceOntologyUtils,
+                SimpleFeature,
+                Util,
+                Layout,
+                xhr,
+                FormatUtils,
+                Select,
+                Memory,
+                ObjectStore
+                ) {
 
 var context_path='..';
 return declare([],{
