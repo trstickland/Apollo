@@ -12,6 +12,7 @@ define([
            'dojo/_base/lang',
            'dojo/dom-construct',
            'dojo/dom-class',
+           'dojo/query',
            'dojo/_base/window',
            'dojo/_base/array',
            'dojo/request/xhr',
@@ -37,6 +38,7 @@ define([
             lang,
             domConstruct,
             domClass,
+            query,
             win,
             array,
             xhr,
@@ -56,8 +58,9 @@ define([
             Hierarchical,
             Faceted,
             HelpMixin,
-            GFF3Driver
-            ) {
+            GFF3Driver,
+            CodonTable,
+            LazyLoad ) {
 
 return declare( [JBPlugin, HelpMixin],
 {
@@ -107,88 +110,162 @@ return declare( [JBPlugin, HelpMixin],
 
         FeatureEdgeMatchManager.addSelectionManager(this.featSelectionManager);
         FeatureEdgeMatchManager.addSelectionManager(this.annotSelectionManager);
+           
+        if(!browser.config.quickHelp)
+        {
+            browser.config.quickHelp = {
+                "title": "Web Apollo Help",
+                "content": this.defaultHelp()
+            }
+        };
 
-        this.setupWebapolloTrackTypes();
+        // register the WebApollo track types with the browser, so
+        // that the open-file dialog and other things will have them
+        // as options
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/DraggableHTMLFeatures',
+            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/NCList',
+                                    'JBrowse/Store/SeqFeature/GFF3',
+                                    'WebApollo/Store/SeqFeature/ApolloGFF3'
+                                  ],
+            label: 'WebApollo Features'
+        });
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/DraggableAlignments',
+            defaultForStoreTypes: [
+                                    'JBrowse/Store/SeqFeature/BAM'
+                                  ],
+            label: 'WebApollo Alignments'
+        });
+        browser.registerTrackType({
+            type:                 'WebApollo/View/Track/SequenceTrack',
+            defaultForStoreTypes: [ 'JBrowse/Store/Sequence/StaticChunked' ],
+            label: 'WebApollo Sequence'
+        });
+
+        // transform track configs from vanilla JBrowse to WebApollo:
+        // type: "JBrowse/View/Track/HTMLFeatures" ==> "WebApollo/View/Track/DraggableHTMLFeatures"
+        //
+        array.forEach(browser.config.tracks,function(e) { thisB.trackTransformer.transform(e); });
+
+        // update track selector to WebApollo's if needed
+        // if no track selector set, use WebApollo's Hierarchical selector
+        if (!browser.config.trackSelector) {
+            browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
+        }
+        // if using JBrowse's Hierarchical selector, switch to WebApollo's
+        else if (browser.config.trackSelector.type == "Hierarchical") {
+            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
+        }
+        // if using JBrowse's Hierarchical selector, switch to WebApollo's
+        else if (browser.config.trackSelector.type == "Faceted") {
+            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
+        }
 
 
-        thisB.createViewMenu();
-        thisB.addStrandFilterOptions();
-        thisB.createHelpMenu();
+        if(browser.config.show_nav&&browser.config.show_menu) {
+            this.createMenus();
+        }
+                
+
+        // put the WebApollo logo in the powered_by place in the main JBrowse bar
         browser.afterMilestone( 'initView', function() {
             if (browser.poweredByLink)  {
                 browser.poweredByLink.innerHTML = '<img src=\"plugins/WebApollo/img/ApolloLogo_100x36.png\" height=\"25\" />';
+                browser.poweredByLink.href = 'http://genomearchitect.org/';
+                browser.poweredByLink.target = "_blank";
             }
-            var help=dijit.byId("menubar_generalhelp");
-            help.set("label", "Web Apollo Help");
+            if(browser.config.show_nav&&browser.config.show_menu) {
+                // the fileDialog element is only initialized if the navigation bar exists
+                var customGff3Driver = declare(GFF3Driver,   {
+                    constructor: function( args ) {
+                        this.storeType = 'WebApollo/Store/SeqFeature/ApolloGFF3';
+                    }
+                });
+                browser.fileDialog.addFileTypeDriver(new customGff3Driver());
+                thisB.postCreateMenus();
+            }
 
         });
         this.monkeyPatchRegexPlugin();
 
     },
-    showLabels: function(show,updating) {
-        var browser=this.browser;
-        var showLabels;
-        if(updating) {
-            showLabels=(browser.cookie("showTrackLabel")||"true")=="true";
-        }
-        else { showLabels=show; }
-        if(!showLabels) {
-            $('.track-label').hide();
+    updateLabels: function() {
+        if(!this._showLabels) {
+            query('.track-label').style('visibility','hidden');
         }
         else {
-            $('.track-label').show();
+            query('.track-label').style('visibility','visible');
         }
+        this.browser.view.updateScroll();
     },
+
+    plusStrandFilter: function(feature)  {
+        var strand = feature.get('strand');
+        if (strand == 1 || strand == '+' || !strand)  { return true; }
+        else  { return false; }
+    },
+
+    minusStrandFilter: function(feature)  {
+        var strand = feature.get('strand');
+        if (strand == -1 || strand == '-' || !strand)  { return true; }
+        else  { return false; }
+    },
+    passAllFilter: function(feature)  {  return true; },
+    passNoneFilter: function(feature)  { return false; },
+
 
     addStrandFilterOptions: function()  {
         var browser=this.browser;
         var thisB = this;
-
-        var strandFilter = function(name,callback) {
-            if(browser.cookie(name)=="true") {
-                browser.addFeatureFilter(callback,name);
-            } else {
-                browser.removeFeatureFilter(name);
-            }
-        };
-        var minusStrandFilter = function(feature)  {
-            var strand = feature.get('strand');
-            return strand == 1 || strand == '+';
-        };
-
-        var plusStrandFilter = function(feature)  {
-            var strand = feature.get('strand');
-            return strand == -1 || strand == '-';
-        };
-
+        var browser = this.browser;
         var plus_strand_toggle = new dijitCheckedMenuItem(
                 {
-                    label: "Hide plus strand",
-                    checked: browser.cookie("plusStrandFilter")=="true",
+                    label: "Show plus strand",
+                    checked: true,
                     onClick: function(event) {
-                        browser.cookie("plusStrandFilter",this.get("checked")?"true":"false");
-                        strandFilter("plusStrandFilter",plusStrandFilter);
+                        var plus = plus_strand_toggle.checked;
+                        var minus = minus_strand_toggle.checked;
+                        if (plus && minus)  {
+                            browser.setFeatureFilter(thisB.passAllFilter);
+                        }
+                        else if (plus)  {
+                            browser.setFeatureFilter(thisB.plusStrandFilter);
+                        }
+                        else if (minus)  {
+                            browser.setFeatureFilter(thisB.minusStrandFilter);
+                        }
+                        else  {
+                            browser.setFeatureFilter(thisB.passNoneFilter);
+                        }
                         browser.view.redrawTracks();
                     }
                 });
+        browser.addGlobalMenuItem( 'view', plus_strand_toggle );
         var minus_strand_toggle = new dijitCheckedMenuItem(
                 {
-                    label: "Hide minus strand",
-                    checked: browser.cookie("minusStandFilter")=="true",
+                    label: "Show minus strand",
+                    checked: true,
                     onClick: function(event) {
-                        browser.cookie("minusStrandFilter",this.get("checked")?"true":"false");
-                        strandFilter("minusStrandFilter",minusStrandFilter);
+                        var plus = plus_strand_toggle.checked;
+                        var minus = minus_strand_toggle.checked;
+                        if (plus && minus)  {
+                            browser.setFeatureFilter(thisB.passAllFilter);
+                        }
+                        else if (plus)  {
+                            browser.setFeatureFilter(thisB.plusStrandFilter);
+                        }
+                        else if (minus)  {
+                            browser.setFeatureFilter(thisB.minusStrandFilter);
+                        }
+                        else  {
+                            browser.setFeatureFilter(thisB.passNoneFilter);
+                        }
                         browser.view.redrawTracks();
-                    }
+                        }
                 });
         browser.addGlobalMenuItem( 'view', minus_strand_toggle );
-        browser.addGlobalMenuItem( 'view', plus_strand_toggle );
-
-        strandFilter("minusStrandFilter",minusStrandFilter);
-        strandFilter("plusStrandFilter",plusStrandFilter);
     },
-    
-    
         
     createNavigationOptions: function()  {
         var browser = this.browser;
@@ -335,11 +412,36 @@ return declare( [JBPlugin, HelpMixin],
         $head.prepend(favicon1);
         $head.prepend(favicon2);
     },
-    createViewMenu: function() {
+    monkeyPatchRegexPlugin: function() {
+        //use var to avoid optimizer
+        var plugin='RegexSequenceSearch/Store/SeqFeature/RegexSearch';
+        require([plugin], function(RegexSearch) {
+            lang.extend(RegexSearch,{
+                translateSequence:function( sequence, frameOffset ) {
+                    var slicedSeq = sequence.slice( frameOffset );
+                    slicedSeq = slicedSeq.slice( 0, Math.floor( slicedSeq.length / 3 ) * 3);
+
+                    var translated = "";
+                    var codontable=new CodonTable();
+                    var codons=codontable.generateCodonTable(codontable.defaultCodonTable);
+                    for(var i = 0; i < slicedSeq.length; i += 3) {
+                        var nextCodon = slicedSeq.slice(i, i + 3);
+                        translated = translated + codons[nextCodon];
+                    }
+
+                    return translated;
+                }
+            });
+        });
+    },
+    // createMenus adds new menu items and is run before the initView milestone
+    createMenus: function() {
         var browser=this.browser;
         var thisB=this;
+        
+        this.createNavigationOptions();
 
-        // add a global menu option for setting CDS color
+                // add a global menu option for setting CDS color
         var cds_frame_toggle = new dijitCheckedMenuItem(
                 {
                     label: "Color by CDS frame",
@@ -378,55 +480,53 @@ return declare( [JBPlugin, HelpMixin],
 
         var css_frame_toggle = new dijitPopupMenuItem(
             {
-                label: "Color Scheme",
-                popup: css_frame_menu
+                label: "Color Scheme"
+                ,popup: css_frame_menu
             });
 
         browser.addGlobalMenuItem('view', css_frame_toggle);
 
+        this.addStrandFilterOptions();
+
+        this._showLabels=(browser.cookie("showTrackLabel")||"true")=="true"
         var hide_track_label_toggle = new dijitCheckedMenuItem(
             {
                 label: "Show track label",
-                checked: (browser.cookie("showTrackLabel")||"true")=="true",
+                checked: this._showLabels,
                 onClick: function(event) {
-                    thisB.showLabels(this.get("checked"));
+                    thisB._showLabels=this.get("checked");
                     browser.cookie("showTrackLabel",this.get("checked")?"true":"false");
+                    thisB.updateLabels();
                 }
             });
-
-        this.showLabels();
-        browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"showLabels",true));
-
-
         browser.addGlobalMenuItem( 'view', hide_track_label_toggle);
         browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
+        browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"updateLabels"));
+
     },
-
-
-    createHelpMenu: function() {
+    // postCreateMenu is run after initView for convenience of ordering new items
+    postCreateMenus: function() {
         var browser=this.browser;
-        if( !browser.config.quickHelp ) {
-            browser.config.quickHelp = {
-                "title": "Web Apollo Help",
-                "content": this.defaultHelp()
-            }
-        }
+        var help=dijit.byId("menubar_generalhelp");
+
+        help.set("label", "Web Apollo Help");
+        help.set("iconClass", null);
         var jbrowseUrl = "http://jbrowse.org";
-        var browser=this.browser;
-        
         browser.addGlobalMenuItem( 'help',
-            new dijitMenuItem(
-                {
-                    id: 'menubar_powered_by_jbrowse',
-                    label: 'Powered by JBrowse',
-                    onClick: function()  { window.open(jbrowseUrl,'help_window').focus(); }
-                })
-        );
+                                new dijitMenuItem(
+                                    {
+                                        id: 'menubar_powered_by_jbrowse',
+                                        label: 'Powered by JBrowse',
+                                        // iconClass: 'jbrowseIconHelp', 
+                                        onClick: function()  { window.open(jbrowseUrl,'help_window').focus(); }
+                                    })
+                              );
         browser.addGlobalMenuItem( 'help',
             new dijitMenuItem(
                 {
                     id: 'menubar_web_service_api',
                     label: 'Web Service API',
+                    // iconClass: 'jbrowseIconHelp',
                     onClick: function()  { window.open("../web_services/web_service_api.html",'help_window').focus(); }
                 })
         );
@@ -435,78 +535,14 @@ return declare( [JBPlugin, HelpMixin],
                 {
                     id: 'menubar_apollo_version',
                     label: 'Get Version',
+                    // iconClass: 'jbrowseIconHelp',
                     onClick: function()  {
                         window.open("../version.jsp",'help_window').focus();
                     }
                 })
         );
-
-    },
-
-
-    monkeyPatchRegexPlugin: function() {
-        var plugin='RegexSequenceSearch/Store/SeqFeature/RegexSearch';
-        require([plugin], function(RegexSearch) {
-            lang.extend(RegexSearch,{
-                translateSequence:function( sequence, frameOffset ) {
-                    var slicedSeq = sequence.slice( frameOffset );
-                    slicedSeq = slicedSeq.slice( 0, Math.floor( slicedSeq.length / 3 ) * 3);
-
-                    var translated = "";
-                    var codontable=new CodonTable();
-                    var codons=codontable.generateCodonTable(codontable.defaultCodonTable);
-                    for(var i = 0; i < slicedSeq.length; i += 3) {
-                        var nextCodon = slicedSeq.slice(i, i + 3);
-                        translated = translated + codons[nextCodon];
-                    }
-
-                    return translated;
-                }
-            });
-        });
-     },
-     setupWebapolloTrackTypes: function() {
-        var browser=this.browser;
-        var thisB=this;
-
-        // register the WebApollo track types with the browser, so
-        // that the open-file dialog and other things will have them
-        // as options
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/DraggableHTMLFeatures',
-            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/NCList',
-                                    'JBrowse/Store/SeqFeature/GFF3',
-                                    'WebApollo/Store/SeqFeature/ApolloGFF3'
-                                  ],
-            label: 'WebApollo Features'
-        });
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/DraggableAlignments',
-            defaultForStoreTypes: [ 'JBrowse/Store/SeqFeature/BAM' ],
-            label: 'WebApollo Alignments'
-        });
-        browser.registerTrackType({
-            type:                 'WebApollo/View/Track/SequenceTrack',
-            defaultForStoreTypes: [ 'JBrowse/Store/Sequence/StaticChunked' ],
-            label: 'WebApollo Sequence'
-        });
-
-        // transform track configs from vanilla JBrowse to WebApollo:
-        // type: "JBrowse/View/Track/HTMLFeatures" ==> "WebApollo/View/Track/DraggableHTMLFeatures"
-        array.forEach(browser.config.tracks,function(e) { thisB.trackTransformer.transform(e); });
-
-        if (!browser.config.trackSelector) {
-            browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
-        }
-        else if (browser.config.trackSelector.type == "Hierarchical") {
-            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
-        }
-        else if (browser.config.trackSelector.type == "Faceted") {
-            browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
-        }
-
-
-     }
+        this.updateLabels();
+    }
 
 
 });

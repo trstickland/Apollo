@@ -3040,25 +3040,41 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     // override getLayout to access addRect method
     _getLayout: function( ) {
         var thisB=this; 
+        var browser = this.browser;
         var layout=this.inherited( arguments ); 
-        return dojo.safeMixin(layout, { 
+        var clabel = this.name+"-collapsed";
+        return declare.safeMixin( layout, { 
             addRect: function( id, left, right, height, data ) {
-                var top=this.inherited(arguments); 
-                return thisB.browser.cookie('Collapsed')=="1"?0:top;
+                var cm = thisB.collapsedMode||browser.cookie(clabel)=="true";
+                //store height for collapsed mode
+                if( cm ) {
+                    var pHeight = Math.ceil(  height / this.pitchY );
+                    this.pTotalHeight = Math.max( this.pTotalHeight||0, pHeight );
+                }
+                return cm?0:this.inherited(arguments);
             }
         });
     },
 
     _trackMenuOptions: function() {
         var thisB = this;
+        var browser = this.browser;
+        var clabel = this.name+"-collapsed";
         var options = this.inherited(arguments) || [];
-
+        
         options.push({ label: "Collapsed view",
                  title: "Collapsed view",
                  type: 'dijit/CheckedMenuItem',
-                 checked: this.browser.cookie('Collapsed')==1,
+                 checked: !!('collapsedMode' in thisB ? thisB.collapsedMode : browser.cookie(clabel)=="true"),
                  onClick: function(event) {
-                     thisB.browser.cookie('Collapsed',this.get("checked")?"1":"0");
+                     thisB.collapsedMode=this.get("checked");
+                     browser.cookie(clabel,this.get("checked")?"true":"false");
+                     var temp=thisB.showLabels;
+                     if(this.get("checked")) {thisB.showLabels=false; }
+                     else if(thisB.previouslyShowLabels) {thisB.showLabels=true;}
+                     thisB.previouslyShowLabels=temp;
+                     delete thisB.trackMenu;
+                     thisB.makeTrackMenu();
                      thisB.redraw();
                  }
                });

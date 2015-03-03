@@ -1,4 +1,11 @@
 /* styles for MAKER tracks and additional customization of WebApollo */
+.Dark .track_jbrowse_view_track_wiggle_xyplot .canvas-track {
+    background-color: #DDD;
+}
+
+.Dark .track_jbrowse_view_track_wiggle_density .canvas-track {
+    background-color: #DDD;
+}
 
 .Dark div.track  {
     /* based on CoolWorld color palette from kuler.adobe.com */
@@ -12,9 +19,6 @@
     background-color: #142933;
 }
 
-.Dark div.feature_name {
-    color: #FAFFF9;
-}
 
 .Dark div.outerTrackContainer {
 
@@ -50,14 +54,17 @@
 }
 
 
-.Dark .feature-label {
+.Dark .feature-name {
     color: #FAFFF9;
 }
 
-.Dark div.track_annotations {
-    background-color: #70D2D0;
+.Dark .track_annotations .feature-name {
+    color: #000;
 }
 
+.Dark div.feature-description {
+    color: #bbb;
+}
 /* UI elements */
 .Dark div.locationTrap {
     background-color: white;
