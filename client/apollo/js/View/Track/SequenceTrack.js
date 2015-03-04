@@ -52,6 +52,9 @@ return declare( Sequence,
         this.loadSequenceAlterations();
         this.annotStoreConfig=lang.mixin(lang.clone(this.config),{browser:this.browser,refSeq:this.refSeq});
         this.alterationsStore = new ScratchPad(this.annotStoreConfig);
+        this.browser.getPlugin( 'WebApollo', dojo.hitch( this, function(p) {
+            this.webapollo = p;
+        }));
     },
     _defaultConfig: function() {
         var thisConfig = this.inherited(arguments);
