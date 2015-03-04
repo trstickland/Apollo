@@ -82,6 +82,7 @@ return declare( [JBPlugin, HelpMixin],
           document.head.appendChild(script);
         });
 
+        domClass.add(win.body(), "webapollo");
         // Checking for cookie for determining the color scheme of WebApollo
         if( browser.cookie("Scheme")=="Dark" ) {
             domClass.add(win.body(), "Dark");

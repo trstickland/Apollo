@@ -267,35 +267,6 @@
     min-width: 1px;
 }
 
-/* CIGAR string "D" subfeature, indicating deletion in aligned sequence relative to viewed sequence */
-/* setting z-index higher than "cigarM" (and default "subfeature") to ensure not hidden by neighboring match regions when zoomed out */
-/* deletions are rendered above matches/mismatches, but below insertion */
-/* turned off, deletion rendering in DraggableAlignments tracks is being handled as non-features by _drawMismatches() now */
-/*
-.cigarD, 
-.plus-cigarD, 
-.minus-cigarD  {
-    height: 100%;
-    background-color: #FF0000;
-    z-index: 12;   
-    min-width: 3px;
-}
-*/
-
-/* CIGAR string "I" subfeature, indicating insertion in aligned sequence relative to viewed sequence */
-/* rendered above sibling subfeature types to increase visibility, since will always be a zero-width feature (?) */
-/* turned off, insertion rendering in DraggableAlignments tracks is being handled as non-features by _drawMismatches() now */
-/*
-.cigarI, 
-.plus-cigarI, 
-.minus-cigarI  {
-    height: 100%;
-    background-color: #00FF00;
-    z-index: 13;  
-    min-width: 3px;
-}
-*/
-
 
 /* CIGAR string "=" (or "E") subfeature, indicating exact sequence match of aligned sequence relative to viewed sequence */
 .cigarEQ, 
@@ -317,19 +288,6 @@
     min-width: 3px;
 }
 
-
-/*  don't render skips, just let parent bam show through (similar to not rendering intron but letting transcript show through)
-.cigarN, 
-.plus-cigarN, 
-.minus-cigarN  {
-    position: absolute;
-    height: 2px; 
-    margin-top: 0px;
-    background-color: #AACDDC;
-    z-index: 8;
-    min-width: 1px;
-}
-*/
 
 /* align_insertion, align_deletion, align_skip, align_mismatch are assigned to 
    non-feature child divs of bam-read features in DraggableAlignments._drawMismatches()
@@ -381,7 +339,6 @@
 .plus-annot-CDS,
 .minus-annot-CDS {
     height: 16px;
-    /*    margin-top: -6px;  */
     background-color: #30AAFF;
     border: 1px solid #01F;
 }
@@ -390,7 +347,6 @@
 .plus-annot-UTR, 
 .minus-annot-UTR {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: #2088FF;
 }
@@ -408,11 +364,6 @@
     background-color: transparent;
     background-image: url('../img/exclamation_circle_orange.png');
     pointer-events: none;   /*  attempting to route around issue with centered non-canon splice sites preventing edge-drag */
-/*    background-image: url('img/exclamation_circle_orange.png');  */
-/*    background-image: url('img/warning_exclamation_small.png'); */
-/*    background-image: url('img/warning_exclamation.png');  */
-/*    background-image: url('img/marker_rounded_red.png'); */
-/*    background-image: url('img/marker_squared_red.png'); */
 }
 
 
@@ -598,7 +549,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-pseudogene, 
 .minus-pseudogene {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(153,153,255);
 }
@@ -607,7 +557,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-tRNA, 
 .minus-tRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -616,7 +565,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-snRNA, 
 .minus-snRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -625,7 +573,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-snoRNA, 
 .minus-snoRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -634,7 +581,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-ncRNA, 
 .minus-ncRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -643,7 +589,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-miRNA, 
 .minus-miRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -652,7 +597,6 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .plus-rRNA, 
 .minus-rRNA {
     height: 12px; 
-    /*    margin-top: -4px; */
     margin-top: 2px;
     background-color: rgb(0,204,0);
 }
@@ -729,4 +673,16 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 }
 .colorCds .frame2 {
     background-color: #8080FF;
+}
+
+
+/* colors for bases must be specified as hex or rgb/hsl strings, no named colors such as 'red' */
+.webapollo .base {
+    background-color: #E0E0E0;
+}
+.webapollo .sequence_alteration .base {
+    background-color: inherit;
+}
+.webapollo .base.highlighted_base {
+    background-color: orange;
 }
