@@ -165,36 +165,22 @@ class FeatureService {
      */
     def generateTranscript(JSONObject jsonTranscript, String trackName, boolean isPseudogene = false) {
         Gene gene = jsonTranscript.has(FeatureStringEnum.PARENT_ID.value) ? (Gene) Feature.findByUniqueName(jsonTranscript.getString(FeatureStringEnum.PARENT_ID.value)) : null;
-        println "JSON transcript ${jsonTranscript}"
-        println "has parent: ${jsonTranscript.has(FeatureStringEnum.PARENT_ID.value)}"
-        println "gene ${gene}"
+        log.debug "JSON transcript ${jsonTranscript}"
+        log.debug "has parent: ${jsonTranscript.has(FeatureStringEnum.PARENT_ID.value)}"
+        log.debug "gene ${gene}"
         trackName = trackName.startsWith("Annotations-") ? trackName.substring("Annotations-".size()) : trackName
-        println "sequence ${trackName}"
         Transcript transcript = null
         boolean useCDS = configWrapperService.useCDS()
 
-        // TODO: not sure if this is a good idea or not
         Sequence sequence = Sequence.findByName(trackName)
-        println "# SEQUENCEs: ${Sequence.count}"
-        println "FIRST SEQUENCE: ${Sequence.first().name}"
-//        println "FIRST SEQUENCE roganism: ${Sequence.first()?.organism.commonName}"
-//        println "organism name: ${sequence.organism.commonName}"
-//        Organism organism = sequence.organism
-
-//        FeatureLazyResidues featureLazyResidues = FeatureLazyResidues.findByName(trackName)
-//        println "featureLazyResidues ${featureLazyResidues}"
         // if the gene is set, then don't process, just set the transcript for the found gene
-        if (gene != null) {
-            println "has a gene! ${gene}"
-//            Feature gsolTranscript = convertJSONToFeature(jsonTranscript, featureLazyResidues);
+        if (gene) {
+            log.debug "has gene: ${gene}"
             transcript = (Transcript) convertJSONToFeature(jsonTranscript, sequence);
-//            transcript = (Transcript) BioObjectUtil.createBioObject(gsolTranscript, bioObjectConfiguration);
             if (transcript.getFmin() < 0 || transcript.getFmax() < 0) {
                 throw new AnnotationException("Feature cannot have negative coordinates")
-//                throw new AnnotationEditorServiceException("Feature cannot have negative coordinates");
             }
 
-//            setOwner(transcript, (String) session.getAttribute("username"));
             featurePropertyService.setOwner(transcript, (String) SecurityUtils?.subject?.principal);
 
             if (!useCDS || transcriptService.getCDS(transcript) == null) {
@@ -204,17 +190,15 @@ class FeatureService {
             addTranscriptToGene(gene, transcript);
             nonCanonicalSplitSiteService.findNonCanonicalAcceptorDonorSpliceSites(transcript);
             transcript.name = nameService.generateUniqueName(transcript)
-//            transcriptService.updateTranscriptAttributes(transcript);
         } else {
-            println "there IS no gene! ${gene}"
+            log.debug "no gene given"
             FeatureLocation featureLocation = convertJSONToFeatureLocation(jsonTranscript.getJSONObject(FeatureStringEnum.LOCATION.value), sequence)
-            println "has a feature location ${featureLocation}"
             Collection<Feature> overlappingFeatures = getOverlappingFeatures(featureLocation);
-            println "overlapping features . . . . ${overlappingFeatures.size()}"
+            log.debug "overlapping features: ${overlappingFeatures.size()}"
             for (Feature feature : overlappingFeatures) {
                 if (!gene && feature instanceof Gene && !(feature instanceof Pseudogene) && configWrapperService.overlapper != null) {
                     Gene tmpGene = (Gene) feature;
-                    println "found an overlpaping gene ${tmpGene}"
+                    log.debug "found an overlpaping gene ${tmpGene}"
                     Transcript tmpTranscript = (Transcript) convertJSONToFeature(jsonTranscript, sequence);
                     updateNewGsolFeatureAttributes(tmpTranscript,sequence);
 //                    Transcript tmpTranscript = (Transcript) BioObjectUtil.createBioObject(gsolTranscript, bioObjectConfiguration);
@@ -222,6 +206,7 @@ class FeatureService {
                         throw new AnnotationException("Feature cannot have negative coordinates");
                     }
 //                    setOwner(tmpTranscript, (String) session.getAttribute("username"));
+                    // TODO: make good code
                     String username = null
                     try {
                         username = SecurityUtils?.subject?.principal
@@ -229,17 +214,14 @@ class FeatureService {
                         log.error(e)
                         username = "demo@demo.gov"
                     }
-                    println "username: ${username}"
 //                    featurePropertyService.setOwner(transcript, (String) SecurityUtils?.subject?.principal);
                     featurePropertyService.setOwner(tmpTranscript, username);
                     if (!useCDS || transcriptService.getCDS(tmpTranscript) == null) {
                         calculateCDS(tmpTranscript);
                     }
-//                    tmpTranscript.name = nameService.generateUniqueName(transcript)
                     tmpTranscript.name = nameService.generateUniqueName(tmpTranscript, tmpGene.name)
-//                    updateTranscriptAttributes(tmpTranscript);
                     if (overlaps(tmpTranscript, tmpGene)) {
-                        println "there is an overlap . . . adding to an existing gene? "
+                        log.debug  "There is an overlap, adding to an existing gene"
                         transcript = tmpTranscript;
                         gene = tmpGene;
                         addTranscriptToGene(gene, transcript)
@@ -249,22 +231,17 @@ class FeatureService {
                         gene.save(insert: false, flush: true)
                         break;
                     } else {
-                        println "there is no overlap .  . we are going to return a NULL gene and a NULL transcript "
-//                        editor.getSession().endTransactionForFeature(feature);
+                        log.debug "There is no overlap, we are going to return a NULL gene and a NULL transcript "
                     }
                 } else {
-                    println "!!!feature is not an instance of a gene or is a pseudogene or there is no adequate overlapper specified"
-//                    editor.getSession().endTransactionForFeature(feature);
+                    log.erro "Feature is not an instance of a gene or is a pseudogene or there is no adequate overlapper specified"
                 }
             }
         }
-        println "is gene null? ${gene}"
-        println "is transcript null? ${transcript}"
         if (gene == null) {
+            log.debug "gene is null"
             JSONObject jsonGene = new JSONObject();
-            println "JSON TRANSCRIPT: " + jsonTranscript
             jsonGene.put(FeatureStringEnum.CHILDREN.value, new JSONArray().put(jsonTranscript));
-            println "JSON GENE: " + jsonGene
             jsonGene.put(FeatureStringEnum.LOCATION.value, jsonTranscript.getJSONObject(FeatureStringEnum.LOCATION.value));
 //            CVTerm cvTerm = CVTerm.findByName(isPseudogene ? FeatureStringEnum.PSEUDOGENE.value :FeatureStringEnum.GENE.value )
             String cvTermString = isPseudogene ? FeatureStringEnum.PSEUDOGENE.value : FeatureStringEnum.GENE.value
@@ -280,9 +257,6 @@ class FeatureService {
             if (gene.getFmin() < 0 || gene.getFmax() < 0) {
                 throw new AnnotationException("Feature cannot have negative coordinates");
             }
-//            featurePropertyService.setOwner(gene, (String) SecurityUtils?.subject?.principal ?: "demo@demo.gov");
-            println "gene ${gene}"
-            println "gene ${gene.parentFeatureRelationships}"
             transcript = transcriptService.getTranscripts(gene).iterator().next();
             if (!useCDS || transcriptService.getCDS(transcript) == null) {
                 calculateCDS(transcript);
@@ -406,7 +380,11 @@ class FeatureService {
 //        fireAnnotationChangeEvent(transcript, gene, AnnotationChangeEvent.Operation.ADD);
     }
 
-
+    /**
+     * TODO:  this is an N^2  search of overlapping exons
+     * @param transcript
+     * @return
+     */
     def removeExonOverlapsAndAdjacencies(Transcript transcript) {
         Collection<Exon> exons = transcriptService.getExons(transcript)
         if (!exons || exons?.size() <= 1) {
@@ -420,7 +398,6 @@ class FeatureService {
             Exon leftExon = sortedExons.get(i);
             for (int j = i + 1; j < sortedExons.size(); ++j) {
                 Exon rightExon = sortedExons.get(j);
-                overlaps(leftExon, rightExon)
                 if (overlaps(leftExon, rightExon) || isAdjacentTo(leftExon.getFeatureLocation(), rightExon.getFeatureLocation())) {
                     try {
                         exonService.mergeExons(leftExon, rightExon);
@@ -1089,20 +1066,9 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
 //            gsolFeature.setOrganism(organism);
 
             // TODO: JSON type feature not set
-            println "entering conversion method"
             JSONObject type = jsonFeature.getJSONObject(FeatureStringEnum.TYPE.value);
-            println "JSON FEATURE ${jsonFeature.toString()}"
-            println "type ${type}"
             String ontologyId = convertJSONToOntologyId(type)
-            println "ontology Id ${ontologyId}"
             gsolFeature = generateFeatureForType(ontologyId)
-            println "Created feature: ${gsolFeature}"
-//            println "source feature: ${sourceFeature}"
-//            Sequence sequence = Sequence.findByName(jsonFeature.get(AnnotationEditorController.REST_TRACK).toString())
-            println "found sequnce: ${sequence}"
-//            gsolFeature.setType(cvTermService.convertJSONToCVTerm(type));
-//            gsolFeature.ontologyId = (cvTermService.convertJSONToCVTerm(type));
-//            gsolFeature.ontologyId = convertJSONToOntologyId(type)
 
             if (jsonFeature.has(FeatureStringEnum.UNIQUENAME.value)) {
                 gsolFeature.setUniqueName(jsonFeature.getString(FeatureStringEnum.UNIQUENAME.value));
@@ -1110,10 +1076,9 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
                 gsolFeature.setUniqueName(nameService.generateUniqueName());
             }
             if (jsonFeature.has(FeatureStringEnum.NAME.value)) {
-                println "HAS name ${jsonFeature.getString(FeatureStringEnum.NAME.value)}"
                 gsolFeature.setName(jsonFeature.getString(FeatureStringEnum.NAME.value));
             } else {
-                println "NO name using unique name"
+                log.debug "NO name using unique name"
                 gsolFeature.name = gsolFeature.uniqueName
             }
 
@@ -1140,10 +1105,10 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
 
             if (jsonFeature.has(FeatureStringEnum.CHILDREN.value)) {
                 JSONArray children = jsonFeature.getJSONArray(FeatureStringEnum.CHILDREN.value);
-                println "jsonFeature ${jsonFeature} has ${children?.size()} children"
+                log.debug "jsonFeature ${jsonFeature} has ${children?.size()} children"
                 for (int i = 0; i < children.length(); ++i) {
                     JSONObject childObject = children.getJSONObject(i)
-                    println "child object ${childObject}"
+                    log.debug "child object ${childObject}"
                     Feature child = convertJSONToFeature(childObject, sequence);
                     child.save(failOnError: true)
                     FeatureRelationship fr = new FeatureRelationship();
@@ -1631,7 +1596,7 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
                 jsonFeature.put(FeatureStringEnum.CHILDREN.value, children);
                 for (FeatureRelationship fr : parentRelationships) {
                     Feature childFeature = fr.childFeature
-                    children.put(convertFeatureToJSON(childFeature));
+                    children.put(convertFeatureToJSON(childFeature,includeSequence));
                 }
             }
 //            Collection<FeatureRelationship> parentRelationships = gsolFeature.getParentFeatureRelationships();
@@ -1656,7 +1621,9 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
                 if (sequenceAlteration.alterationResidue) {
                     jsonFeature.put(FeatureStringEnum.RESIDUES.value, sequenceAlteration.alterationResidue);
                 }
-            } else if (includeSequence) {
+            } 
+            else 
+            if (includeSequence) {
                 // don't think we handle this case
 //                else{
                 String residues = sequenceService.getResiduesFromFeature(gsolFeature)

@@ -21,6 +21,8 @@ class FeatureRelationship implements  Ontological{
     String value; // unused, but could be used like metadata (strength / quality of connection)
     int rank;
     static String ontologyId = "part_of"
+    
+//    static belongsTo = [parentFeature: Feature]
 
     static hasMany = [
             featureRelationshipProperties : FeatureProperty
@@ -53,7 +55,7 @@ class FeatureRelationship implements  Ontological{
 
     public FeatureRelationship generateClone() {
         FeatureRelationship cloned = new FeatureRelationship();
-        cloned.type = this.type;
+//        cloned.type = this.type;
         cloned.parentFeature = this.parentFeature;
         cloned.childFeature = this.childFeature;
         cloned.value = this.value;

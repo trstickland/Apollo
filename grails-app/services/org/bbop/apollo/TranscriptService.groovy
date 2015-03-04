@@ -189,7 +189,9 @@ class TranscriptService {
      */
     public void setCDS(Feature feature,CDS cds,boolean replace = true) {
         if(replace){
+            println "replacing CDS on feature"
             if(featureRelationshipService.setChildForType(feature,cds)){
+                println "returning "
                 return
             }
         }
@@ -205,8 +207,8 @@ class TranscriptService {
         println "fr: ${fr}"
         println "feature: ${feature}"
         println "cds: ${cds}"
-        feature.addToChildFeatureRelationships(fr)
-        cds.addToParentFeatureRelationships(fr)
+        feature.addToParentFeatureRelationships(fr)
+        cds.addToChildFeatureRelationships(fr)
 
         cds.save()
         feature.save(flush: true)
