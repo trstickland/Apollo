@@ -24,11 +24,13 @@ define([
            'dijit/form/DropDownButton',
            'dijit/DropDownMenu',
            'dijit/form/Button',
+           'dijit/registry',
            'JBrowse/Plugin',
            'WebApollo/FeatureEdgeMatchManager',
            'WebApollo/FeatureSelectionManager',
            'WebApollo/TrackConfigTransformer',
            'WebApollo/View/Track/AnnotTrack',
+           'WebApollo/View/Track/SequenceTrack',
            'WebApollo/View/TrackList/Hierarchical',
            'WebApollo/View/TrackList/Faceted',
            'WebApollo/View/Dialog/Help',
@@ -50,11 +52,13 @@ define([
             dijitDropDownButton,
             dijitDropDownMenu,
             dijitButton,
+            registry,
             JBPlugin,
             FeatureEdgeMatchManager,
             FeatureSelectionManager,
             TrackConfigTransformer,
             AnnotTrack,
+            SequenceTrack,
             Hierarchical,
             Faceted,
             HelpMixin,
@@ -117,8 +121,8 @@ return declare( [JBPlugin, HelpMixin],
             browser.config.quickHelp = {
                 "title": "Web Apollo Help",
                 "content": this.defaultHelp()
-            }
-        };
+            };
+        }
 
         // register the WebApollo track types with the browser, so
         // that the open-file dialog and other things will have them
@@ -145,25 +149,20 @@ return declare( [JBPlugin, HelpMixin],
         });
 
         // transform track configs from vanilla JBrowse to WebApollo:
-        // type: "JBrowse/View/Track/HTMLFeatures" ==> "WebApollo/View/Track/DraggableHTMLFeatures"
-        //
         array.forEach(browser.config.tracks,function(e) { thisB.trackTransformer.transform(e); });
 
-        // update track selector to WebApollo's if needed
-        // if no track selector set, use WebApollo's Hierarchical selector
+        // update track selector to WebApollo
         if (!browser.config.trackSelector) {
             browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
         }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
         else if (browser.config.trackSelector.type == "Hierarchical") {
             browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
         }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
         else if (browser.config.trackSelector.type == "Faceted") {
             browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
         }
 
-
+        //pre-initView createMenu
         if(browser.config.show_nav&&browser.config.show_menu) {
             this.createMenus();
         }
@@ -191,6 +190,8 @@ return declare( [JBPlugin, HelpMixin],
         this.monkeyPatchRegexPlugin();
 
     },
+
+    // use visibility:hidden to hide track labels
     updateLabels: function() {
         if(!this._showLabels) {
             query('.track-label').style('visibility','hidden');
@@ -203,23 +204,21 @@ return declare( [JBPlugin, HelpMixin],
 
     plusStrandFilter: function(feature)  {
         var strand = feature.get('strand');
-        if (strand == 1 || strand == '+' || !strand)  { return true; }
-        else  { return false; }
+        return strand == 1 || strand == '+' || !strand;
     },
 
     minusStrandFilter: function(feature)  {
         var strand = feature.get('strand');
-        if (strand == -1 || strand == '-' || !strand)  { return true; }
-        else  { return false; }
+        return strand == -1 || strand == '-' || !strand;
     },
     passAllFilter: function(feature)  {  return true; },
     passNoneFilter: function(feature)  { return false; },
 
 
     addStrandFilterOptions: function()  {
-        var browser=this.browser;
         var thisB = this;
         var browser = this.browser;
+        var minus_strand_toggle;
         var plus_strand_toggle = new dijitCheckedMenuItem(
                 {
                     label: "Show plus strand",
@@ -243,7 +242,7 @@ return declare( [JBPlugin, HelpMixin],
                     }
                 });
         browser.addGlobalMenuItem( 'view', plus_strand_toggle );
-        var minus_strand_toggle = new dijitCheckedMenuItem(
+        minus_strand_toggle = new dijitCheckedMenuItem(
                 {
                     label: "Show minus strand",
                     checked: true,
@@ -303,8 +302,8 @@ return declare( [JBPlugin, HelpMixin],
         this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
 
         // move Tool menu in front of Help menu
-        var toolsMenu = dijit.byId('dropdownbutton_tools');
-        var helpMenu = dijit.byId('dropdownbutton_help');
+        var toolsMenu = registry.byId('dropdownbutton_tools');
+        var helpMenu = registry.byId('dropdownbutton_help');
         domConstruct.place(toolsMenu.domNode,helpMenu.domNode,'before');
         this.searchMenuInitialized = true;
     },
@@ -344,12 +343,6 @@ return declare( [JBPlugin, HelpMixin],
         this.loginMenuInitialized = true;
     },
 
-    /**
-     *  get the GenomeView's user annotation track
-     *  WebApollo assumes there is only one AnnotTrack
-     *     if there are multiple AnnotTracks, getAnnotTrack returns first one found
-     *         iterating through tracks list
-     */
     getAnnotTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
             var a;
@@ -364,12 +357,6 @@ return declare( [JBPlugin, HelpMixin],
         return null;
     },
 
-    /**
-     *  get the GenomeView's sequence track
-     *  WebApollo assumes there is only one SequenceTrack
-     *     if there are multiple SequenceTracks, getSequenceTrack returns first one found
-     *         iterating through tracks list
-     */
     getSequenceTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
             var a;
@@ -408,6 +395,7 @@ return declare( [JBPlugin, HelpMixin],
         $head.prepend(favicon1);
         $head.prepend(favicon2);
     },
+
     monkeyPatchRegexPlugin: function() {
         //use var to avoid optimizer
         var plugin='RegexSequenceSearch/Store/SeqFeature/RegexSearch';
@@ -418,10 +406,11 @@ return declare( [JBPlugin, HelpMixin],
                     slicedSeq = slicedSeq.slice( 0, Math.floor( slicedSeq.length / 3 ) * 3);
 
                     var translated = "";
+                    var i,nextCodon;
                     var codontable=new CodonTable();
                     var codons=codontable.generateCodonTable(codontable.defaultCodonTable);
-                    for(var i = 0; i < slicedSeq.length; i += 3) {
-                        var nextCodon = slicedSeq.slice(i, i + 3);
+                    for(i = 0; i < slicedSeq.length; i += 3) {
+                        nextCodon = slicedSeq.slice(i, i + 3);
                         translated = translated + codons[nextCodon];
                     }
 
@@ -430,7 +419,7 @@ return declare( [JBPlugin, HelpMixin],
             });
         });
     },
-    // createMenus adds new menu items and is run before the initView milestone
+
     createMenus: function() {
         var browser=this.browser;
         var thisB=this;
@@ -443,8 +432,11 @@ return declare( [JBPlugin, HelpMixin],
                     label: "Color by CDS frame",
                     checked: browser.cookie("colorCdsByFrame")=="true",
                     onClick: function(event) {
-                        if(this.get("checked")) domClass.add(win.body(), "colorCds");
-                        else domClass.remove(win.body(),"colorCds");
+                        if(this.get("checked")) {
+                            domClass.add(win.body(), "colorCds");
+                        } else {
+                            domClass.remove(win.body(),"colorCds");
+                        }
                         browser.cookie("colorCdsByFrame", this.get("checked")?"true":"false");
                     }
                 });
@@ -484,7 +476,7 @@ return declare( [JBPlugin, HelpMixin],
 
         this.addStrandFilterOptions();
 
-        this._showLabels=(browser.cookie("showTrackLabel")||"true")=="true"
+        this._showLabels=(browser.cookie("showTrackLabel")||"true")=="true";
         var hide_track_label_toggle = new dijitCheckedMenuItem(
             {
                 label: "Show track label",
@@ -500,10 +492,10 @@ return declare( [JBPlugin, HelpMixin],
         browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"updateLabels"));
 
     },
-    // postCreateMenu is run after initView for convenience of ordering new items
+
     postCreateMenus: function() {
         var browser=this.browser;
-        var help=dijit.byId("menubar_generalhelp");
+        var help=registry.byId("menubar_generalhelp");
 
         help.set("label", "Web Apollo Help");
         help.set("iconClass", null);
