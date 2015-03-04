@@ -384,11 +384,7 @@ return declare( [JBPlugin, HelpMixin],
         return null;
     },
 
-    removeItemWithLabel: function(inarray, label) {
-        return array.filter(inarray,function(obj) {
-            return ! (obj.label && (obj.label === label));
-        });
-    },
+    
 
     setFavicon: function(favurl) {
         var $head = $('head');

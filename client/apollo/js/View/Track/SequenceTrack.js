@@ -53,6 +53,27 @@ return declare( Sequence,
         this.annotStoreConfig=lang.mixin(lang.clone(this.config),{browser:this.browser,refSeq:this.refSeq});
         this.alterationsStore = new ScratchPad(this.annotStoreConfig);
     },
+    _defaultConfig: function() {
+        var thisConfig = this.inherited(arguments);
+        thisConfig.pinned = true;
+        return thisConfig;
+    },
+
+    /** removing "Pin to top" menuitem, so SequenceTrack is always pinned 
+     *    and "Delete track" menuitem, so can't be deleted
+     *   (very hacky since depends on label property of menuitem config)
+     */
+    _trackMenuOptions: function() {
+        var options = this.inherited( arguments );
+        options = this.removeItemWithLabel(options, "Pin to top");
+        options = this.removeItemWithLabel(options, "Delete track");
+        return options;
+    },
+    removeItemWithLabel: function(inarray, label) {
+        return array.filter(inarray,function(obj) {
+            return ! (obj.label && (obj.label === label));
+        });
+    },
 
     /*
      *  sequence alteration UPDATE command received by a ChangeNotificationListener
@@ -123,7 +144,13 @@ return declare( Sequence,
         var rightBase=args.rightBase;
         var scale=args.scale;
         this.alterationsStore.getFeatures({start: args.leftBase, end: args.rightBase-1 },function(f) { alterations.push(f); });
-      
+        if(scale<1.3) {
+            this.hide();
+            return;
+        }
+        else {
+            this.show();
+        }
         args.finishCallback=function() {
             finishCallback();
             // Add right-click menu

@@ -131,11 +131,17 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
      */
     _trackMenuOptions: function() {
         var options = this.inherited( arguments );
-        options = this.webapollo.removeItemWithLabel(options, "Pin to top");
-        options = this.webapollo.removeItemWithLabel(options, "Delete track");
+        options = this.removeItemWithLabel(options, "Pin to top");
+        options = this.removeItemWithLabel(options, "Delete track");
         return options;
     }, 
-    
+    removeItemWithLabel: function(inarray, label) {
+        return array.filter(inarray,function(obj) {
+            return ! (obj.label && (obj.label === label));
+        });
+    },
+
+
     setViewInfo: function( genomeView, numBlocks,
                            trackDiv, labelDiv,
                            widthPct, widthPx, scale ) {
