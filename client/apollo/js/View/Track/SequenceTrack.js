@@ -121,7 +121,9 @@ return declare( Sequence,
         var alterations=[];
         var leftBase=args.leftBase;
         var rightBase=args.rightBase;
-        this.alterationsStore.getFeatures({start: args.leftBase, end: args.rightBase-1 },function(f) { alterations.push(f); }); 
+        var scale=args.scale;
+        this.alterationsStore.getFeatures({start: args.leftBase, end: args.rightBase-1 },function(f) { alterations.push(f); });
+      
         args.finishCallback=function() {
             finishCallback();
             // Add right-click menu
@@ -129,17 +131,14 @@ return declare( Sequence,
             var nl=query('.base',args.block.domNode);
             if(!nl.length) return;
 
-            nl.style("backgroundColor","#E0E0E0");
-            thisB.renderAlterations(alterations,leftBase,rightBase,args.block.domNode,thisB);
+            thisB.renderAlterations(alterations,leftBase,rightBase,args.block.domNode,scale);
 
             // render mouseover highlight
             nl.on(mouse.enter,function(evt) {
-                evt.target.oldColor=domStyle.get(evt.target,"backgroundColor");
-                domStyle.set(evt.target,"backgroundColor","orange");
+                domClass.add(evt.target,"highlighted_base");
             });
             nl.on(mouse.leave,function(evt) {
-                domStyle.set(evt.target,"backgroundColor",evt.target.oldColor);
-                evt.target.oldColor=null
+                domClass.remove(evt.target,"highlighted_base");
             });
             nl.forEach(function( featDiv ) {
                 var refreshMenu = lang.hitch( thisB, '_refreshMenu', featDiv );
@@ -172,18 +171,19 @@ return declare( Sequence,
     _makeFeatureContextMenu: function( featDiv,container ) {
         var thisB=this;
         var menu=new Menu();
+        var feature = featDiv.feature;
         this.own( menu );
-        if(featDiv.feature) {
+        if(feature) {
             
             menu.addChild(new MenuItem({
-                label: "View "+featDiv.feature.get("type")+" details",
+                label: "View details",
                 iconClass: "dijitIconTask",
                 onClick: function(evt) {
                     console.log(featDiv.feature);
                     thisB._openDialog({
                         action: "contentDialog",
-                        title: "Add Insertion",
-                        content: domConstruct.create('p',{innerHTML: featDiv.feature.data.id})
+                        title: "Sequence alteration",
+                        content: domConstruct.create('div',{innerHTML: '<p>'+feature.get('id')+'</p>'+feature.get('residues')?('<p>'+feature.get('residues')+'</p>'):''})
                     },evt,featDiv);
                 }
             }));
@@ -477,7 +477,8 @@ return declare( Sequence,
         },evt);
     },
 
-    renderAlterations: function(alterations,leftBase,rightBase,blockNode,thisB) {
+    renderAlterations: function(alterations,leftBase,rightBase,blockNode,scale) {
+        var thisB=this;
         array.forEach(alterations,function(alt) {
             var start=alt.get("start");
             var end=alt.get("end");
@@ -499,6 +500,19 @@ return declare( Sequence,
                         "height": "100%"
                     }
                 },blockNode);
+
+                var seqNode = domConstruct.create("table", {
+                    className: "sequence sequence_alteration",
+                    style: {
+                        "width": (alt.get('residues').length+1)*charWidth+"%",
+                        "backgroundColor": "rgba(0,255,0,0.2)",
+                        "left": pct+"%",
+                        "bottom": "0px",
+                        "position": "absolute"
+                    }
+                }, featDiv);
+
+                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), alt.get('residues'), scale ));
             }
             else if(type=="deletion") {
                 var charWidth=100/(rightBase-leftBase);
@@ -513,6 +527,15 @@ return declare( Sequence,
                         "height": "100%"
                     }
                 },blockNode);
+                var seqNode = domConstruct.create("table", {
+                    className: "sequence sequence_alteration",
+                    style: {
+                        width: "100%",
+                        bottom: "0px",
+                        position: "absolute"
+                    }
+                }, featDiv);
+                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), new Array(alt.get('residues').length+1).join('-'), scale ));
             }
             else if(type=="substitution") {
                 var charWidth=100/(rightBase-leftBase);
@@ -527,6 +550,12 @@ return declare( Sequence,
                         "height": "100%"
                     }
                 },blockNode);
+
+                var seqNode = domConstruct.create("table", {
+                    className: "sequence sequence_alteration",
+                    style: { width: "100%", bottom: "0px", position: "absolute" }
+                }, featDiv);
+                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), alt.get('residues'), scale ));
             }
             var refreshMenu = lang.hitch( thisB, '_refreshMenu', featDiv );
             thisB.own( on( featDiv,  'mouseover', refreshMenu ) );
