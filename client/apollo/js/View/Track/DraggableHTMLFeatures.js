@@ -1,6 +1,7 @@
 define( [
             'dojo/_base/declare',
             'dojo/_base/array',
+            'dojo/_base/lang',
             'JBrowse/View/Track/HTMLFeatures',
             'WebApollo/FeatureSelectionManager',
             'dijit/Menu',
@@ -15,7 +16,8 @@ define( [
             'WebApollo/SequenceOntologyUtils'
         ],
         function( declare,
-            array, 
+            array,
+            lang,
             HTMLFeatureTrack,
             FeatureSelectionManager,
             dijitMenu,
@@ -72,7 +74,7 @@ return declare( HTMLFeatureTrack,
     constructor: function( args ) {
         this.gview = this.browser.view;
         // get a handle to on the main WA object
-        this.browser.getPlugin( 'WebApollo', dojo.hitch( this, function(p) {
+        this.browser.getPlugin( 'WebApollo', lang.hitch( this, function(p) {
             this.webapollo = p;
             this.setSelectionManager( this.webapollo.featSelectionManager );
         }));
@@ -244,8 +246,8 @@ return declare( HTMLFeatureTrack,
         if( featdiv )  {  // just in case featDiv doesn't actually get created
 
             var $featdiv = $(featdiv);
-            $featdiv.bind("mousedown", dojo.hitch( this, 'onFeatureMouseDown') );
-            $featdiv.bind("dblclick",  dojo.hitch( this, 'onFeatureDoubleClick') );
+            $featdiv.bind("mousedown", lang.hitch( this, 'onFeatureMouseDown') );
+            $featdiv.bind("dblclick",  lang.hitch( this, 'onFeatureDoubleClick') );
             if (this.feature_context_menu  && (! this.has_custom_context_menu)) {
                 this.feature_context_menu.bindDomNode(featdiv);
             }
@@ -280,8 +282,8 @@ return declare( HTMLFeatureTrack,
             //   (could get this by DOM traversal, but shouldn't take much memory, and having it with each subfeatdiv is more convenient)
             subfeatdiv.track = this;
             subfeatdiv.subfeature = subfeature;
-            $subfeatdiv.bind("mousedown", dojo.hitch( this, 'onFeatureMouseDown' ) );
-            $subfeatdiv.bind("dblclick",  dojo.hitch( this, 'onFeatureDoubleClick') );
+            $subfeatdiv.bind("mousedown", lang.hitch( this, 'onFeatureMouseDown' ) );
+            $subfeatdiv.bind("dblclick",  lang.hitch( this, 'onFeatureDoubleClick') );
         }
         return subfeatdiv;
     },
@@ -961,7 +963,7 @@ return declare( HTMLFeatureTrack,
         var createAnnotationMenu = new dijitMenu();
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "gene",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 this.selectionManager.clearSelection();
                 atrack.createAnnotations(selection);
@@ -969,7 +971,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "pseudogene",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -978,7 +980,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "tRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -987,7 +989,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "snRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -996,7 +998,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "snoRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1005,7 +1007,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "ncRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1014,7 +1016,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "rRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1023,7 +1025,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "miRNA",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1032,7 +1034,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "repeat_region",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1041,7 +1043,7 @@ return declare( HTMLFeatureTrack,
         }));
         createAnnotationMenu.addChild(new dijitMenuItem( {
             label: "transposable_element",
-            onClick: dojo.hitch(this, function() {
+            onClick: lang.hitch(this, function() {
                 var selection = this.selectionManager.getSelection();
                 var selFeats = this.selectionManager.getSelectedFeatures();
                 this.selectionManager.clearSelection();
@@ -1056,7 +1058,7 @@ return declare( HTMLFeatureTrack,
         this.contextMenuItems["create_annotation"] = createAnnotationMenuItem;
         menu.addChild(createAnnotationMenuItem);
         
-        dojo.connect(menu, "onOpen", dojo.hitch(this, function() {
+        dojo.connect(menu, "onOpen", lang.hitch(this, function() {
             this.updateContextMenu();
         }));
         

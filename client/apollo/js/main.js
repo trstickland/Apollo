@@ -25,6 +25,7 @@ define([
            'dijit/DropDownMenu',
            'dijit/form/Button',
            'dijit/registry',
+           'dijit/place',
            'JBrowse/Plugin',
            'WebApollo/FeatureEdgeMatchManager',
            'WebApollo/FeatureSelectionManager',
@@ -34,8 +35,8 @@ define([
            'WebApollo/View/TrackList/Hierarchical',
            'WebApollo/View/TrackList/Faceted',
            'WebApollo/View/Dialog/Help',
-           'WebApollo/Permission',
            'WebApollo/JSONUtils',
+           'WebApollo/AnnotationEditorServiceAdapter',
            'JBrowse/View/FileDialog/TrackList/GFF3Driver',
            'JBrowse/CodonTable'
        ],
@@ -56,6 +57,7 @@ define([
             dijitDropDownMenu,
             dijitButton,
             registry,
+            place,
             JBPlugin,
             FeatureEdgeMatchManager,
             FeatureSelectionManager,
@@ -65,18 +67,20 @@ define([
             Hierarchical,
             Faceted,
             HelpMixin,
-            Permission,
             JSONUtils,
+            AnnotService,
             GFF3Driver,
             CodonTable
             ) {
 
-return declare( [JBPlugin, HelpMixin, Permission],
+return declare( [JBPlugin, HelpMixin],
 {
     constructor: function( args ) {
         console.log("loaded WebApollo plugin");
         var thisB = this;
         this.searchMenuInitialized = false;
+        this.annotService=new AnnotService(this);
+
         var browser = this.browser;  // this.browser set in Plugin superclass constructor
         [
           'plugins/WebApollo/jslib/bbop/bbop.js',
@@ -313,41 +317,39 @@ return declare( [JBPlugin, HelpMixin, Permission],
         this.searchMenuInitialized = true;
     },
 
-
     initLoginMenu: function(username) {
-        var thisB = this;
+        var webapollo = this;
         var loginButton;
         if (username)  {   // permission only set if permission request succeeded
             this.browser.addGlobalMenuItem( 'user',
-                new dijitMenuItem(
-                    {
-                        label: 'Logout',
-                        onClick: function()  {
-                            thisB.getAnnotTrack().logout();
-                        }
-                    })
+                            new dijitMenuItem(
+                                            {
+                                                    label: 'Logout',
+                                                    onClick: function()  {
+                                                            webapollo.getAnnotTrack().logout();
+                                                    }
+                                            })
             );
             var userMenu = this.browser.makeGlobalMenu('user');
             loginButton = new dijitDropDownButton(
-                { className: 'user',
-                    innerHTML: '<span class="usericon"></span>' + username,
-                    title: 'user logged in: UserName',
-                    dropDown: userMenu
-                });
+                            { className: 'user',
+                                    innerHTML: '<span class="usericon"></span>' + username,
+                                    title: 'user logged in: UserName',
+                                    dropDown: userMenu
+                            });
         }
         else  {
             loginButton = new dijitButton(
-                { className: 'login',
-                    innerHTML: "Login",
-                    onClick: function()  {
-                        thisB.getAnnotTrack().login();
-                    }
-                });
+                            { className: 'login',
+                                    innerHTML: "Login",
+                                    onClick: function()  {
+                                            webapollo.getAnnotTrack().login();
+                                    }
+                            });
         }
         this.browser.menuBar.appendChild( loginButton.domNode );
         this.loginMenuInitialized = true;
     },
-
     getAnnotTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
             var a;
@@ -494,7 +496,7 @@ return declare( [JBPlugin, HelpMixin, Permission],
             });
         browser.addGlobalMenuItem( 'view', hide_track_label_toggle);
         browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
-        browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"initializeAnnotations"));
+        browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"updateLabels"));
     },
     postCreateMenus: function() {
         var browser=this.browser;

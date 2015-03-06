@@ -70,7 +70,7 @@ var contextMenuItems;
 var context_path = "..";
 
 
-var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMixin,GetSequenceMixin,Permission], 
+var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMixin,GetSequenceMixin], 
 {
     constructor: function( args ) {
         this.has_custom_context_menu = true;
@@ -147,8 +147,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                            widthPct, widthPx, scale ) {
                    
         this.inherited( arguments );
-        var track = this;
-        track.hide();
+        this.browser.publish('/webapollo/v1/c/service/update', this);
+        this.hide();
     }, 
    
 
@@ -1726,60 +1726,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         });
     },
     
-    initLoginMenu: function() {
-        var track = this;
-        var browser = this.browser;
-        if (this.permission)  {   // permission only set if permission request
-                                    // succeeded
-            browser.addGlobalMenuItem( 'user',
-                new dijitMenuItem({
-                    label: 'Logout',
-                    onClick: function()  { 
-                        console.log("clicked stub for logging out");
-                        dojo.xhrPost( {
-                            url: context_path + "/Login?operation=logout",
-                            handleAs: "json",
-                            timeout: 5 * 1000,
-                            load: function(response, ioArgs) { //
-                            },
-                            error: function(response, ioArgs) { //
-                            // track.handleError(response);
-                            }
-                        });
-                    }
-                })
-            );
-            var userMenu = browser.makeGlobalMenu('user');
-            loginButton = new dijitDropDownButton(
-                { className: 'user',
-                  innerHTML: '<span class="usericon"></span>' + this.username,
-                  title: 'user logged in: UserName',
-                  dropDown: userMenu
-                });
-        }
-        else  { 
-            loginButton = new dijitButton(
-                { className: 'login',
-                  innerHTML: "Login",
-                  onClick: function()  {
-                      dojo.xhrGet( {
-                          url: context_path + "/Login?operation=login",
-                          handleAs: "text",
-                          timeout: 5 * 60,
-                          load: function(response, ioArgs) {
-                              track.openDialog("Login", response);
-                          }
-                      });
-                  }
-                });
-        }
-        browser.afterMilestone( 'initView', function() {
-            // must append after menubar is created, plugin constructor called
-            // before menubar exists,
-            // browser.initView called after menubar exists
-            browser.menuBar.appendChild( loginButton.domNode );
-        });
-    }, 
+    
     
     initAnnotContextMenu: function() {
         var thisB = this;

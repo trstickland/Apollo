@@ -1,16 +1,49 @@
 define([
-       'dojo/_base/declare'
+       'dojo/_base/declare',
+       'dojo/_base/lang',
+       'dojo/_base/array',
+       'dojo/request/xhr',
+       'WebApollo/Permission',
+       'WebApollo/JSONUtils'
        ],
-       function(declare) {
+       function(declare,
+           lang,
+           array,
+           xhr,
+           Permission,
+           JSONUtils
+           )
+       {
 
 return declare(null, {
+
+constructor: function(plugin) {
+    var browser=plugin.browser;
+    this.webapollo=plugin;
+    this.context_path="..";
+    browser.subscribe('/webapollo/v1/c/service/update', lang.hitch(this,"initializeAnnotations"));
+},
+
+getPermission: function( trackName ) {
+    var thisB = this;
+    return xhr.post(this.context_path + "/AnnotationEditorService", {
+        data: JSON.stringify({ "track": trackName, "operation": "get_user_permission" }),
+        handleAs: "json",
+        timeout: 5 * 1000 // Time in milliseconds
+    });
+},
+
 createAnnotationChangeListener: function(retryNumber) {
     // https://github.com/zyro23/grails-spring-websocket
     this.listener = new SockJS("/apollo/stomp");
+    this.listener.debug = null;
     this.client = Stomp.over(this.listener);
+    this.client.debug = null;
     var client = this.client;
     var thisB = this;
-    var browser = this.browser;
+    var annotTrack = this.webapollo.getAnnotTrack();
+    var seqTrack = this.webapollo.getSequenceTrack();
+    var browser = this.webapollo.browser;
 
 
     if(typeof window.parent.getEmbeddedVersion == 'function') {
@@ -67,39 +100,34 @@ createAnnotationChangeListener: function(retryNumber) {
 
 
         client.subscribe("/topic/AnnotationNotification", function (message) {
-            console.log('NOTIFIED of ANNOT CHANGE',message);
-
-
             var changeData;
 
             try {
                 changeData = JSON.parse(JSON.parse(message.body));
-                console.log(changeData);
 
 
                 if (changeData.operation == "ADD") {
-                    console.log("ADD",changeData);
                     if (changeData.sequenceAlterationEvent) {
-                        seqtrack.annotationsAddedNotification(changeData.features);
+                        seqTrack.annotationsAddedNotification(changeData.features);
                     }
                     else {
-                        track.annotationsAddedNotification(changeData.features);
+                        annotTrack.annotationsAddedNotification(changeData.features);
                     }
                 }
                 else if (changeData.operation == "DELETE") {
                     if (changeData.sequenceAlterationEvent) {
-                        seqtrack.annotationsDeletedNotification(changeData.features);
+                        seqTrack.annotationsDeletedNotification(changeData.features);
                     }
                     else {
-                        track.annotationsDeletedNotification(changeData.features);
+                        annotTrack.annotationsDeletedNotification(changeData.features);
                     }
                 }
                 else if (changeData.operation == "UPDATE") {
                     if (changeData.sequenceAlterationEvent) {
-                        seqtrack.annotationsUpdatedNotification(changeData.features);
+                        seqTrack.annotationsUpdatedNotification(changeData.features);
                     }
                     else {
-                        track.annotationsUpdatedNotification(changeData.features);
+                        annotTrack.annotationsUpdatedNotification(changeData.features);
                     }
                 }
                 else {
@@ -113,59 +141,54 @@ createAnnotationChangeListener: function(retryNumber) {
         });
     });
 },
-initializeAnnotations: function(trackNames) {
-    var track=this.getAnnotTrack();
-    var seqtrack=this.getSequenceTrack();
-    var thisB=this;
-    var browser=this.browser;
-    var ref=browser.view.ref.name;
-    if(!track) {
-        console.log("Not initialized");
-        return;
-    }
-    return this.getPermission(track.name+ref.name).then(function() {
-        track.initAnnotContextMenu();
+initializeAnnotations: function(annotTrack) {
+    var thisB = this;
+    var browser = this.webapollo.browser;
+    var ref = browser.view.ref;
+    console.log("Initializing annotations:",annotTrack.name+"-"+ref.name);
+    return this.getPermission( annotTrack.name+ref.name ).then(function(response) {
+        this.username=response.username;
+        this.permission=response.permission;
+        annotTrack.initAnnotContextMenu();
 
-        track.initSaveMenu();
-        track.initPopupDialog();
+        annotTrack.initSaveMenu();
+        annotTrack.initPopupDialog();
 
         thisB.createAnnotationChangeListener(0);
         
 
-        track.makeTrackDroppable();
-        track.show();
+        annotTrack.makeTrackDroppable();
+        annotTrack.show();
 
         // initialize menus regardless
-        if (!thisB.loginMenuInitialized) {
-            thisB.initLoginMenu(track.username);
+        if(! thisB.webapollo.loginMenuInitialized ) {
+            console.log("HERE:",this.username);
+            thisB.webapollo.initLoginMenu(this.username);
         }
-        if (! thisB.searchMenuInitialized && track.permission)  {
-            thisB.initSearchMenu();
+        if (! thisB.webapollo.searchMenuInitialized && this.permission )  {
+            thisB.webapollo.initSearchMenu();
         }
     },
     function() {
-        if(track.config.disableJBrowseMode) {
-            track.login();
-        }
-        if (!thisB.loginMenuInitialized) {
-            thisB.initLoginMenu(track.username);
+        if(annotTrack.config.disableJBrowseMode) {
+            annotTrack.login();
         }
     }).then(function() {
         xhr('../AnnotationEditorService', {
             handleAs: "json",
-            data: JSON.stringify({ "track": track.getUniqueTrackName(), "operation": "get_features" }),
+            data: JSON.stringify({ "track": annotTrack.getUniqueTrackName(), "operation": "get_features" }),
             method: "post"
         }).then(function(response) {
             var responseFeatures = response.features;
             array.forEach(responseFeatures,function(feat) {
                 var jfeat = JSONUtils.createJBrowseFeature( feat );
-                track.store.insert(jfeat);
-                track.processParent(feat, "ADD");
+                annotTrack.store.insert(jfeat);
+                annotTrack.processParent(feat, "ADD");
             });
-            track.changed();
+            annotTrack.changed();
         }, function(response) {
             console.log("Annotation server error--maybe you forgot to login to the server?");
-            track.handleError({ responseText: response.response.text } );
+            annotTrack.handleError({ responseText: response.response.text } );
             return response;
         });
     });

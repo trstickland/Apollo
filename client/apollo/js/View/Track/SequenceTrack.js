@@ -84,7 +84,7 @@ return declare( Sequence,
      */
     annotationsUpdatedNotification: function(annots)  {
         this.annotationsDeletedNotification(annots);
-        this.annotationAddedNotification(annots);
+        this.annotationsAddedNotification(annots);
     },
     annotationsAddedNotification: function(responseFeatures)  {
         for (var i = 0; i < responseFeatures.length; ++i) {
