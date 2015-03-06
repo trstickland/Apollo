@@ -1860,20 +1860,12 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Duplicate",
                 onClick: function(event) {
-                    // use annot_context_mousedown instead of current event, since
-                    // want to split
-                    // at mouse position of event that triggered annot_context_menu
-                    // popup
                     thisB.duplicateSelectedFeatures(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["duplicate"] = index++;
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Make Intron",
-                // use annot_context_mousedown instead of current event, since want
-                // to split
-                // at mouse position of event that triggered annot_context_menu
-                // popup
                 onClick: function(event) {
                     thisB.makeIntron(thisB.annot_context_mousedown);
                 }
@@ -1891,10 +1883,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Set Translation Start",
-                // use annot_context_mousedown instead of current event, since want
-                // to split
-                // at mouse position of event that triggered annot_context_menu
-                // popup
                 onClick: function(event) {
                     thisB.setTranslationStart(thisB.annot_context_mousedown);
                 }
@@ -1902,10 +1890,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             contextMenuItems["set_translation_start"] = index++;
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Set Translation End",
-                // use annot_context_mousedown instead of current event, since want
-                // to split
-                // at mouse position of event that triggered annot_context_menu
-                // popup
                 onClick: function(event) {
                     thisB.setTranslationEnd(thisB.annot_context_mousedown);
                 }
@@ -1913,10 +1897,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             contextMenuItems["set_translation_end"] = index++;
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Set Longest ORF",
-                // use annot_context_mousedown instead of current event, since want
-                // to split
-                // at mouse position of event that triggered annot_context_menu
-                // popup
                 onClick: function(event) {
                     thisB.setLongestORF();
                 }
@@ -2009,9 +1989,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         }
 
         annot_context_menu.onOpen = function(event) {
-            // keeping track of mousedown event that triggered annot_context_menu
-            // popup,
-            // because need mouse position of that event for some actions
             thisB.annot_context_mousedown = thisB.last_mousedown_event;
             if (thisB.permission & Permission.WRITE) {
                 thisB.updateMenu();
