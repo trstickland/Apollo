@@ -23,8 +23,8 @@ RefactorClient changes:
 - Make a little text that says "Success" before refreshing the page for logins (ideally wouldn't have to do a page refresh)
 - Added substitutions/insertions/deletions on new SequenceTrack
 - Made substitutions/insertions/deletions overlaid using a transparent div similar to old SequenceTrack
-- Made it so Dark theme is now instant and doesn't require a page reload
-- The thin borderline between tracks is made invisible in dark mode which is much nicer. Also blue highlight instead of yellow for that super-cool blue feeling.
+- Added view of sequence, made track pinned, and auto-hide track when zoomed out (as per trello card)
+- Place annotation/websocket code in new module: AnnotationEditorServiceAdapter
 
 
 Casualties of the refactoring process so far:
@@ -32,10 +32,4 @@ Casualties of the refactoring process so far:
 - The sequence overlay on the annotation track (sequence is overlaid on top of feature)
 
 
-
-
-Future
-
-- Remove "login" code from AnnotTrack, place in main plugin or different module
-- Remove the limitation that features without subfeatures cannot be annotated
 
