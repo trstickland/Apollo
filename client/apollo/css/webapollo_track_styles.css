@@ -680,9 +680,23 @@ div.track_webapollo_view_track_annotsequencetrack div.track-label .track-close-b
 .webapollo .base {
     background-color: #E0E0E0;
 }
-.webapollo .sequence_alteration .base {
+.webapollo .sequence_alteration.insertion {
+    background-color: rgba(0,255,0,0.2);
+}
+.webapollo .sequence_alteration.deletion {
+    background-color: rgba(255,0,0,0.2);
+}
+.webapollo .sequence_alteration.substitution {
+    background-color: rgba(255,255,0,0.2);
+}
+
+.webapollo .sequence_alteration.insertion > table {
     background-color: inherit;
 }
+.webapollo .sequence_alteration .base {
+    background-color: transparent;
+}
+
 .webapollo .base.highlighted_base {
     background-color: orange;
 }

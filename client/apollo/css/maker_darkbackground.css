@@ -283,9 +283,33 @@
 .Dark .right-edge-match  {
     border-right: solid red 3px;
 }
-
-/* end of MAKER styles */
-.Dark .global_highlight {
-    background: rgba(62,100,150,0.7);
-    border: 0px;
+.Dark .base {
+    background-color: #E0E0E0;
 }
+
+.Dark .sequence_alteration.insertion {
+    background-color: rgba(0,255,0,0.2);
+}
+.Dark .sequence_alteration.deletion {
+    background-color: rgba(255,0,0,0.2);
+}
+.Dark .sequence_alteration.substitution {
+    background-color: rgba(255,255,0,0.2);
+}
+
+.Dark .sequence_alteration.insertion > table {
+    background-color: rgba(0,255,0,0.8);
+}
+
+.Dark .sequence_alteration.deletion > table {
+    background-color: rgba(255,0,0,0.8);
+}
+.Dark .sequence_alteration.substitution > table {
+    background-color: rgba(255,255,0,0.8);
+}
+
+.Dark .sequence_alteration .base {
+    background-color: transparent;
+}
+
+

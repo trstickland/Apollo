@@ -202,6 +202,7 @@ return declare( Sequence,
         var thisB=this;
         var menu=new Menu();
         var feature = featDiv.feature;
+        var hasPermission=this.webapollo.annotService.hasWritePermission()
         this.own( menu );
         if(feature) {
             
@@ -217,39 +218,43 @@ return declare( Sequence,
                     },evt,featDiv);
                 }
             }));
-            menu.addChild(new MenuItem({
-                label: "Remove "+featDiv.feature.get("type"),
-                iconClass: "dijitIconDelete",
-                onClick: function(evt) {
-                    thisB.requestDeletion(featDiv.feature);
-                }
-            }));
+            if(hasPermission) {
+                menu.addChild(new MenuItem({
+                    label: "Remove "+featDiv.feature.get("type"),
+                    iconClass: "dijitIconDelete",
+                    onClick: function(evt) {
+                        thisB.requestDeletion(featDiv.feature);
+                    }
+                }));
+            }
         }
         else {
-            menu.addChild(new MenuItem({
-                label: "Create insertion",
-                iconClass: "dijitIconNewTask",
-                onClick: function(evt){
-                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                    thisB.createGenomicInsertion(evt,gcoord-1);
-                }
-            }));
-            menu.addChild(new MenuItem({
-                label: "Create deletion",
-                iconClass: "dijitIconDelete",
-                onClick: function(evt){
-                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                    thisB.createGenomicDeletion(evt,gcoord-1);
-                }
-            }));
-            menu.addChild(new MenuItem({
-                label: "Create substitution",
-                iconClass: "dijitIconEditProperty",
-                onClick: function(evt){
-                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                    thisB.createGenomicSubstitution(evt,gcoord-1);
-                }
-            }));
+            if(hasPermission) {
+                menu.addChild(new MenuItem({
+                    label: "Create insertion",
+                    iconClass: "dijitIconNewTask",
+                    onClick: function(evt){
+                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                        thisB.createGenomicInsertion(evt,gcoord-1);
+                    }
+                }));
+                menu.addChild(new MenuItem({
+                    label: "Create deletion",
+                    iconClass: "dijitIconDelete",
+                    onClick: function(evt){
+                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                        thisB.createGenomicDeletion(evt,gcoord-1);
+                    }
+                }));
+                menu.addChild(new MenuItem({
+                    label: "Create substitution",
+                    iconClass: "dijitIconEditProperty",
+                    onClick: function(evt){
+                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                        thisB.createGenomicSubstitution(evt,gcoord-1);
+                    }
+                }));
+            }
         }
         menu.startup();
         menu.bindDomNode( featDiv );
@@ -520,23 +525,20 @@ return declare( Sequence,
 
             if(type=="insertion") {
                 featDiv=domConstruct.create("div",{ 
+                    "class": "sequence_alteration insertion",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": "2px",
                         "left": pct+"%",
-                        "backgroundColor": "rgba(0,255,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
 
                 var seqNode = domConstruct.create("table", {
-                    className: "sequence sequence_alteration",
                     style: {
                         "width": (alt.get('residues').length+1)*charWidth+"%",
-                        "backgroundColor": "rgba(0,255,0,0.2)",
-                        "left": pct+"%",
                         "bottom": "0px",
                         "position": "absolute"
                     }
@@ -547,18 +549,17 @@ return declare( Sequence,
             else if(type=="deletion") {
                 var charWidth=100/(rightBase-leftBase);
                 featDiv=domConstruct.create("div",{ 
+                    "class": "sequence_alteration deletion",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": (end-start)*charWidth+"%",
                         "left": pct+"%",
-                        "backgroundColor": "rgba(255,0,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
                 var seqNode = domConstruct.create("table", {
-                    className: "sequence sequence_alteration",
                     style: {
                         width: "100%",
                         bottom: "0px",
@@ -570,20 +571,23 @@ return declare( Sequence,
             else if(type=="substitution") {
                 var charWidth=100/(rightBase-leftBase);
                 featDiv=domConstruct.create("div",{ 
+                    "class": "sequence_alteration substitution",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": (end-start)*charWidth+"%",
                         "left": pct+"%",
-                        "backgroundColor": "rgba(255,255,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
 
                 var seqNode = domConstruct.create("table", {
-                    className: "sequence sequence_alteration",
-                    style: { width: "100%", bottom: "0px", position: "absolute" }
+                    style: {
+                        width: "100%",
+                        bottom: "0px",
+                        position: "absolute"
+                    }
                 }, featDiv);
                 seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), alt.get('residues'), scale ));
             }
