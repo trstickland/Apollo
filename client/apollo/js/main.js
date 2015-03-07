@@ -535,7 +535,7 @@ return declare( [JBPlugin, HelpMixin],
                 })
         );
         this.updateLabels();
-    },
+    }
 
 });
 
