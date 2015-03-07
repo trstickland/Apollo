@@ -104,6 +104,8 @@ createAnnotationChangeListener: function(retryNumber) {
 
         client.subscribe("/topic/AnnotationNotification", function (message) {
             var changeData;
+            annotTrack=annotTrack||thisB.webapollo.getAnnotTrack();
+            seqTrack=seqTrack||thisB.webapollo.getSequenceTrack();
 
             try {
                 changeData = JSON.parse(JSON.parse(message.body));
@@ -177,7 +179,7 @@ initializeAnnotations: function(annotTrack) {
             annotTrack.login();
         }
     }).then(function() {
-        xhr('../AnnotationEditorService', {
+        xhr(thisB.context_path+'/AnnotationEditorService', {
             handleAs: "json",
             data: JSON.stringify({ "track": annotTrack.getUniqueTrackName(), "operation": "get_features" }),
             method: "post"
