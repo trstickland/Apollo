@@ -85,7 +85,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         this.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
             if (currRegion.ref != this.refSeq.name) {
                 if (this.listener) {
-                    this.listener.close();
                 }
             }
         }));
@@ -124,17 +123,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         return thisConfig;
     },
 
-    /**
-     * removing "Pin to top" menuitem, so SequenceTrack is always pinned and
-     * "Delete track" menuitem, so can't be deleted (very hacky since depends on
-     * label property of menuitem config)
-     */
-    _trackMenuOptions: function() {
-        var options = this.inherited( arguments );
-        options = this.removeItemWithLabel(options, "Pin to top");
-        options = this.removeItemWithLabel(options, "Delete track");
-        return options;
-    }, 
     removeItemWithLabel: function(inarray, label) {
         return array.filter(inarray,function(obj) {
             return ! (obj.label && (obj.label === label));
@@ -1732,7 +1720,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var thisB = this;
         contextMenuItems = new Array();
         annot_context_menu = new dijit.Menu({});
-        var permission = thisB.permission;
+        var permission = thisB.webapollo.annotService.permission;
         var index = 0;
         annot_context_menu.addChild(new dijit.MenuItem( {
             label: "Get sequence",
@@ -1762,7 +1750,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             }
         } ));
         contextMenuItems["zoom_to_base_level"] = index++;
-        if (!(permission & Permission.WRITE)) {
+        if (!(this.webapollo.annotService.hasWritePermission())) {
             annot_context_menu.addChild(new dijit.MenuSeparator());
             index++;
             annot_context_menu.addChild(new dijit.MenuItem( {
@@ -1773,7 +1761,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             } ));
             contextMenuItems["annotation_info_editor"] = index++;
         }
-        if (permission & Permission.WRITE) {
+        if (this.webapollo.annotService.hasWritePermission()) {
             annot_context_menu.addChild(new dijit.MenuItem( {
                 label: "Edit Information (alt-click)",
                 onClick: function(event) {
@@ -1937,7 +1925,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
         annot_context_menu.onOpen = function(event) {
             thisB.annot_context_mousedown = thisB.last_mousedown_event;
-            if (thisB.permission & Permission.WRITE) {
+            if (thisB.webapollo.annotService.hasWritePermission()) {
                 thisB.updateMenu();
             }
             dojo.forEach(this.getChildren(), function(item, idx, arr) {
@@ -1962,6 +1950,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
      */
     initSaveMenu: function()  {
         var track = this;
+        var permission = this.webapollo.annotService.permission;
         dojo.xhrPost( {
             sync: true,
             postData: JSON.stringify({ "track": track.getUniqueTrackName(), "operation": "get_data_adapters" }),
@@ -1973,7 +1962,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 var dataAdapters = response.data_adapters;
                 for (var i = 0; i < dataAdapters.length; ++i) {
                     var dataAdapter = dataAdapters[i];
-                    if (track.permission & dataAdapter.permission) {
+                    if (permission & dataAdapter.permission) {
                         track.exportAdapters.push( dataAdapter );
                     }
                 }
@@ -2709,6 +2698,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var browser = this.browser;
         var clabel = this.name+"-collapsed";
         var options = this.inherited(arguments) || [];
+        options = this.removeItemWithLabel(options, "Pin to top");
+        options = this.removeItemWithLabel(options, "Delete track");
         
         options.push({ label: "Collapsed view",
                  title: "Collapsed view",
@@ -2732,7 +2723,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
     executeUpdateOperation: function(postData) {
         console.log("JSON",JSON.stringify(postData));
-        this.client.send("/app/AnnotationNotification", {"content-type":"text/plain"}, JSON.stringify(postData));
+        this.webapollo.annotService.client.send("/app/AnnotationNotification", {"content-type":"text/plain"}, JSON.stringify(postData));
     },
 
     isProteinCoding: function(feature) {
@@ -2743,23 +2734,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         return false;
     },
 
-    isLoggedIn: function() {
-        return this.username != undefined;
-    },
-
-    hasWritePermission: function() {
-        return this.permission & Permission.WRITE;
-    },
     
-    isAdmin: function() {
-        return this.permission & Permission.ADMIN;
-    },
-    
-    canEdit: function(feature) {
-        if (feature) {
-            feature = this.getTopLevelAnnotation(feature);
-        }
-        return this.hasWritePermission();
+    canEdit: function(/* feature */) {
+        return this.webapollo.annotService.hasWritePermission();
     },
 
     processParent: function(feature, operation) {

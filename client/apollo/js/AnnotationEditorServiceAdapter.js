@@ -35,6 +35,9 @@ getPermission: function( trackName ) {
 
 createAnnotationChangeListener: function(retryNumber) {
     // https://github.com/zyro23/grails-spring-websocket
+    if(this.listener) {
+        this.listener.close();
+    }
     this.listener = new SockJS("/apollo/stomp");
     this.listener.debug = null;
     this.client = Stomp.over(this.listener);
@@ -147,8 +150,9 @@ initializeAnnotations: function(annotTrack) {
     var ref = browser.view.ref;
     console.log("Initializing annotations:",annotTrack.name+"-"+ref.name);
     return this.getPermission( annotTrack.name+ref.name ).then(function(response) {
-        this.username=response.username;
-        this.permission=response.permission;
+        console.log(response);
+        thisB.username=response.username;
+        thisB.permission=response.permission;
         annotTrack.initAnnotContextMenu();
 
         annotTrack.initSaveMenu();
@@ -162,10 +166,9 @@ initializeAnnotations: function(annotTrack) {
 
         // initialize menus regardless
         if(! thisB.webapollo.loginMenuInitialized ) {
-            console.log("HERE:",this.username);
-            thisB.webapollo.initLoginMenu(this.username);
+            thisB.webapollo.initLoginMenu(thisB.username);
         }
-        if (! thisB.webapollo.searchMenuInitialized && this.permission )  {
+        if (! thisB.webapollo.searchMenuInitialized && thisB.permission )  {
             thisB.webapollo.initSearchMenu();
         }
     },
@@ -193,9 +196,20 @@ initializeAnnotations: function(annotTrack) {
         });
     });
 
+},
+
+
+isLoggedIn: function() {
+    return this.username != undefined;
+},
+
+hasWritePermission: function() {
+    return this.permission & Permission.WRITE;
+},
+
+isAdmin: function() {
+    return this.permission & Permission.ADMIN;
 }
-
-
 
 });
 
