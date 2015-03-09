@@ -276,25 +276,6 @@ return declare( [JBPlugin, HelpMixin],
         browser.addGlobalMenuItem( 'view', minus_strand_toggle );
     },
         
-    createNavigationOptions: function()  {
-        var browser = this.browser;
-        var select_Tracks = new dijitMenuItem(
-            {
-                label: "Sequences",
-                onClick: function(event) {
-                    window.open('../sequences', '_blank');
-                }
-            });
-        browser.addGlobalMenuItem( 'tools', select_Tracks );
-        var recent_Changes = new dijitMenuItem(
-            {
-                label: "Changes",
-                onClick: function(event) {
-                    window.open('../changes', '_blank');
-                }
-            });
-        browser.addGlobalMenuItem( 'tools', recent_Changes );
-    },
 
     initSearchMenu: function()  {
         var thisB = this;
@@ -431,9 +412,7 @@ return declare( [JBPlugin, HelpMixin],
         var browser=this.browser;
         var thisB=this;
         
-        this.createNavigationOptions();
-
-                // add a global menu option for setting CDS color
+        // add a global menu option for setting CDS color
         var cds_frame_toggle = new dijitCheckedMenuItem(
                 {
                     label: "Color by CDS frame",

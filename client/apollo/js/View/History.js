@@ -1,19 +1,29 @@
 define( [
             'dojo/_base/declare',
+            'dojo/dom-construct',
+            'dojo/dom-attr',
+            'dojo/dom-geometry',
+            'dojo/on',
             'dijit/Menu',
             'dijit/MenuItem', 
             'dijit/PopupMenuItem',
             'dijit/form/Button',
+            'jquery',
             'WebApollo/JSONUtils',
             'JBrowse/Util', 
             'JBrowse/View/GranularRectLayout',
             'dojo/request/xhr'
         ],
-        function( declare, 
+        function( declare,
+          domConstruct,
+          domAttr,
+          domGeom,
+          on,
           dijitMenu,
           dijitMenuItem,
           dijitPopupMenuItem,
           dijitButton,
+          $,
           JSONUtils, 
           Util,
           Layout,
@@ -31,21 +41,21 @@ return declare([],{
 
     getHistoryForSelectedFeatures: function(selected) {
         var track = this;
-        var content = dojo.create("div");
-        var historyDiv = dojo.create("div", { className: "history_div" }, content);
-        var historyTable = dojo.create("div", { className: "history_table" }, historyDiv);
-        var historyHeader = dojo.create("div", { className: "history_header", innerHTML: "<span class='history_header_column history_column_operation history_column'>Operation</span><span class='history_header_column history_column'>Editor</span><span class='history_header_column history_column'>Date</span>" }, historyTable);
-        var historyRows = dojo.create("div", { className: "history_rows" }, historyTable);
-        var historyPreviewDiv = dojo.create("div", { className: "history_preview" }, historyDiv);
+        var content = domConstruct.create("div");
+        var historyDiv = domConstruct.create("div", { className: "history_div" }, content);
+        var historyTable = domConstruct.create("div", { className: "history_table" }, historyDiv);
+        var historyHeader = domConstruct.create("div", { className: "history_header", innerHTML: "<span class='history_header_column history_column_operation history_column'>Operation</span><span class='history_header_column history_column'>Editor</span><span class='history_header_column history_column'>Date</span>" }, historyTable);
+        var historyRows = domConstruct.create("div", { className: "history_rows" }, historyTable);
+        var historyPreviewDiv = domConstruct.create("div", { className: "history_preview" }, historyDiv);
         var history;
         var selectedIndex = 0;
-        var minFmin = undefined;
-        var maxFmax = undefined;
+        var minFmin;
+        var maxFmax;
         var current;
         var historyMenu;
         var canEdit = this.canEdit(selected[0].feature);
 
-        function revert() {
+        var revert = function() {
             if (selectedIndex == current) {
                 return;
             }
@@ -57,12 +67,12 @@ return declare([],{
             }
             history[selectedIndex].current = true;
             history[current].current = false;
-            dojo.attr(historyRows.childNodes.item(selectedIndex), "class", history[selectedIndex].current ? "history_row history_row_current" : "history_row");
-            dojo.attr(historyRows.childNodes.item(current), "class", "history_row");
+            domAttr.set(historyRows.childNodes.item(selectedIndex), "class", history[selectedIndex].current ? "history_row history_row_current" : "history_row");
+            domAttr.set(historyRows.childNodes.item(current), "class", "history_row");
             current = selectedIndex;
         };
         
-        function initMenu() {
+        var initMenu = function() {
             historyMenu = new dijitMenu({ });
             historyMenu.addChild(new dijitMenuItem({
                 label: "Set as current",
@@ -71,7 +81,7 @@ return declare([],{
                 }
             }));
             historyMenu.startup();
-        }
+        };
         
         var cleanupDiv = function(div) {
             if (div.style.top) {
@@ -97,7 +107,7 @@ return declare([],{
             historyPreviewDiv.featureNodes = new Array();
             historyPreviewDiv.startBase = minFmin - (maxLength * 0.1);
             historyPreviewDiv.endBase = maxFmax + (maxLength * 0.1);
-            var coords = dojo.position(historyPreviewDiv);
+            var coords = domGeom.position(historyPreviewDiv);
             // setting labelScale and descriptionScale parameter to 100 px/bp,
             // so neither should get triggered
             var featDiv = track.renderFeature(jfeature, jfeature.uid, historyPreviewDiv, coords.w / (maxLength), 100, 100, minFmin, maxFmax, true);
@@ -109,8 +119,8 @@ return declare([],{
                 historyPreviewDiv.removeChild(historyPreviewDiv.lastChild);
             }
             historyPreviewDiv.appendChild(featDiv);
-            dojo.attr(historyRows.childNodes.item(selectedIndex), "class", history[selectedIndex].current ? "history_row history_row_current" : "history_row");
-            dojo.attr(historyRows.childNodes.item(index), "class", "history_row history_row_selected");
+            domAttr.set(historyRows.childNodes.item(selectedIndex), "class", history[selectedIndex].current ? "history_row history_row_current" : "history_row");
+            domAttr.set(historyRows.childNodes.item(index), "class", "history_row history_row_selected");
             selectedIndex = index;
         };
 
@@ -118,27 +128,27 @@ return declare([],{
             for (var i = 0; i < history.length; ++i) {
                 var historyItem = history[i];
                 var rowCssClass = "history_row";
-                var row = dojo.create("div", { className: rowCssClass }, historyRows);
+                var row = domConstruct.create("div", { className: rowCssClass }, historyRows);
                 var columnCssClass = "history_column";
-                dojo.create("span", { className: columnCssClass + " history_column_operation ", innerHTML: historyItem.operation }, row);
-                dojo.create("span", { className: columnCssClass, innerHTML: historyItem.editor }, row);
-                dojo.create("span", { className: columnCssClass + " history_column_date", innerHTML: historyItem.date }, row);
+                domConstruct.create("span", { className: columnCssClass + " history_column_operation ", innerHTML: historyItem.operation }, row);
+                domConstruct.create("span", { className: columnCssClass, innerHTML: historyItem.editor }, row);
+                domConstruct.create("span", { className: columnCssClass + " history_column_date", innerHTML: historyItem.date }, row);
                 var revertButton = new dijitButton( {
                     label: "Revert",
                     showLabel: false,
                     iconClass: "dijitIconUndo",
-                    'class': "revert_button",
+                    class: "revert_button",
                     onClick: function(index) {
                         return function() {
                             selectedIndex = index;
                             revert();
-                        }
+                        };
                     }(i)
                 });
                 if (!canEdit) {
                     revertButton.set("disabled", true);
                 }
-                dojo.place(revertButton.domNode, row);
+                domConstruct.place(revertButton.domNode, row);
                 var afeature = historyItem.features[0];
                 var fmin = afeature.location.fmin;
                 var fmax = afeature.location.fmax;
@@ -153,13 +163,13 @@ return declare([],{
                     current = i;
                 }
 
-                dojo.connect(row, "onclick", row, function(index) {
+                on(row, "onclick", row, function(index) {
                     return function() {
                         displayPreview(index);
                     };
                 }(i));
 
-                dojo.connect(row, "oncontextmenu", row, function(index) {
+                on(row, "oncontextmenu", row, function(index) {
                     return function() {
                         displayPreview(index);
                     };
@@ -169,7 +179,7 @@ return declare([],{
 
             }
             displayPreview(current);
-            var coords = dojo.position(row);
+            var coords = domGeom.position(row);
             historyRows.scrollTop = selectedIndex * coords.h;
         };
     
@@ -190,22 +200,18 @@ return declare([],{
             }
             var operation = "get_history_for_features";
             var trackName = track.getUniqueTrackName();
-            dojo.xhrPost( {
-                postData: JSON.stringify( { "track": trackName, "features": features, "operation": operation }),
-                url: context_path + "/AnnotationEditorService",
+            xhr.post(context_path + "/AnnotationEditorService", {
+                data: JSON.stringify( { "track": trackName, "features": features, "operation": operation }),
                 handleAs: "json",
-                timeout: 5000 * 1000, // Time in milliseconds
-                load: function(response, ioArgs) {
-                    var features = response.features;
-                    history = features[i].history;
-                    displayHistory();
-                },
-                // The ERROR function will be called in an error case.
-                error: function(response, ioArgs) { // 
-                    track.handleError(response);
-                    return response; // 
-                }
-
+                timeout: 5000 * 1000
+            }).then(function(response, ioArgs) {
+                var features = response.features;
+                history = features[i].history;
+                displayHistory();
+            },
+            function(response, ioArgs) {
+                track.handleError(response);
+                return response;
             });
         };
 

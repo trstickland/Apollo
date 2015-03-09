@@ -12,8 +12,7 @@ define( [
             'dijit/form/RadioButton',
             'dojox/grid/DataGrid',
             'dojo/data/ItemFileWriteStore',
-            'dojox/grid/cells/_Widget',
-            'dojox/grid/cells/ComboBox',
+            'dojox/grid/cells/dijit',
             'dojo/request/xhr',
             'dijit/form/Select',
             'dojo/store/Memory',
@@ -37,8 +36,7 @@ define( [
                 dijitRadioButton,
                 dojoxDataGrid,
                 dojoItemFileWriteStore,
-                dojoxGridCells,
-                dojoxGridComboBox,
+                dijit,
                 xhr,
                 Select,
                 Memory,
@@ -185,7 +183,6 @@ return declare([],{
         var escapeString = function(str) {
             return str.replace(/(["'])/g, "\\$1");
         };
-        
         var init=function() {
             var features = [ { "uniquename": uniqueName } ];
             var operation = "get_annotation_info_editor_data";
@@ -210,23 +207,7 @@ return declare([],{
             dateLastModifiedField.set("value", FormatUtils.formatDate(date.getTime()));
         };
 
-        var updateName = function(name) {
-            name = escapeString(name);
-            var features = [ { "uniquename": uniqueName, "name": name } ];
-            var operation = "set_name";
-            var postData = { "track": trackName, "features": features, "operation": operation };
-            track.executeUpdateOperation(postData);
-            updateTimeLastUpdated();
-        };
-  
-        var updateSymbol = function(symbol) {
-            symbol = escapeString(symbol);
-            var features = [ { "uniquename": uniqueName, "symbol": symbol } ];
-            var operation = "set_symbol";
-            var postData = { "track": trackName, "features": features, "operation": operation };
-            track.executeUpdateOperation(postData);
-            updateTimeLastUpdated();
-        };
+ 
         var updateDescription = function(description) {
             description = escapeString(description);
             var features = [ { "uniquename": uniqueName, "description": description } ];
@@ -237,6 +218,14 @@ return declare([],{
         };
 
 
+        var updateName = function(name) {
+            name = escapeString(name);
+            var features = [ { "uniquename": uniqueName, "name": name } ];
+            var operation = "set_name";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        };
         var initName = function(feature) {
             if (feature.name) {
                 nameField.set("value", feature.name);
@@ -257,7 +246,15 @@ return declare([],{
                 }
             });
         };
-        
+         
+        var updateSymbol = function(symbol) {
+            symbol = escapeString(symbol);
+            var features = [ { "uniquename": uniqueName, "symbol": symbol } ];
+            var operation = "set_symbol";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        };
         var initSymbol = function(feature) {
             if (feature.symbol) {
                 symbolField.set("value", feature.symbol);
@@ -462,7 +459,7 @@ return declare([],{
             return str.replace(/(["'])/g, "\\$1");
         };
         
-        function init() {
+        var init =  function() {
             var features = [ { "uniquename": uniqueName } ];
             var operation = "get_annotation_info_editor_data";
             var postData = { "track": trackName, "features": features, "operation": operation };
@@ -503,7 +500,30 @@ return declare([],{
         var initType = function(feature) {
             header.innerHTML = feature.type.name;
         };
-        
+         
+        var updateTimeLastUpdated = function() {
+            var date = new Date();
+            dateLastModifiedField.set("value", FormatUtils.formatDate(date.getTime()));
+        };
+
+ 
+        var updateDescription = function(description) {
+            description = escapeString(description);
+            var features = [ { "uniquename": uniqueName, "description": description } ];
+            var operation = "set_description";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        };
+
+        var updateName = function(name) {
+            name = escapeString(name);
+            var features = [ { "uniquename": uniqueName, "name": name } ];
+            var operation = "set_name";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        };
         var initName = function(feature) {
             if (feature.name) {
                 nameField.set("value", feature.name);
@@ -941,7 +961,7 @@ return declare([],{
                             name: 'Gene Ontology ID',
                             field: 'go_id', // '_item',
                             width: '100%',
-                            type: declare(dojoxGridCells, {
+                            type: declare(dojox.grid.cells._Widget, {
                                 widgetClass: dijitTextBox,
                                 createWidget: function(inNode, inDatum, inRowIndex) {
                                     var widget = new this.widgetClass(this.getWidgetProps(inDatum), inNode);
@@ -1067,7 +1087,7 @@ return declare([],{
                                 name: 'Comment',
                                 field: 'comment',
                                 editable: hasWritePermission,
-                                type: dojoxGridComboBox, 
+                                type: dojox.grid.cells.ComboBox, 
                                 options: cannedComments,
                                 formatter: function(comment) {
                                     if (!comment) {
