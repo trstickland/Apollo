@@ -1,23 +1,31 @@
 define( [
             'dojo/_base/declare',
             'dojo/_base/array',
+            'dojo/_base/lang',
+            'dojo/dom-class',
+            'dojo/dom-construct',
+            'dojo/dom-attr',
+            'dojo/dom-style',
+            'dojo/on',
             'jquery',
             'jqueryui/droppable',
             'jqueryui/resizable',
             'jqueryui/draggable',
             'dijit/Menu',
-            'dijit/MenuItem', 
-            'dijit/MenuSeparator', 
+            'dijit/MenuItem',
+            'dijit/MenuSeparator',
+            'dijit/PopupMenuItem',
             'dijit/form/Button',
             'dijit/form/DropDownButton',
+            'dijit/registry',
             'dojox/widget/DialogSimple',
             'dojo/json',
             'WebApollo/View/Track/DraggableHTMLFeatures',
             'WebApollo/View/Track/SequenceTrack',
             'WebApollo/FeatureSelectionManager',
             'WebApollo/JSONUtils',
-            'WebApollo/Permission', 
-            'WebApollo/SequenceSearch', 
+            'WebApollo/Permission',
+            'WebApollo/SequenceSearch',
             'WebApollo/SequenceOntologyUtils',
             'JBrowse/Model/SimpleFeature',
             'JBrowse/Util', 
@@ -32,6 +40,12 @@ define( [
         ],
         function( declare,
                 array,
+                lang,
+                domClass,
+                domConstruct,
+                domAttr,
+                domStyle,
+                on,
                 $,
                 droppable,
                 resizable,
@@ -39,8 +53,10 @@ define( [
                 dijitMenu,
                 dijitMenuItem,
                 dijitMenuSeparator,
+                dijitPopupMenuItem,
                 dijitButton,
                 dijitDropDownButton,
+                registry,
                 dojoxDialogSimple,
                 JSON,
                 DraggableFeatureTrack,
@@ -82,7 +98,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         this.annot_under_mouse = null;
 
 
-        this.browser.subscribe("/jbrowse/v1/n/navigate", dojo.hitch(this, function(currRegion) {
+        this.browser.subscribe("/jbrowse/v1/n/navigate", lang.hitch(this, function(currRegion) {
             if (currRegion.ref != this.refSeq.name) {
                 if (this.listener) {
                 }
@@ -249,7 +265,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
              * subfeature is not selectable, do not bind mouse down
              */
             if (subdiv && subdiv != null && (! this.selectionManager.unselectableTypes[subfeature.get('type')]) )  {
-                $(subdiv).bind("mousedown", dojo.hitch(this, 'onAnnotMouseDown'));
+                $(subdiv).bind("mousedown", lang.hitch(this, 'onAnnotMouseDown'));
             }
         }
         
@@ -303,7 +319,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     makeResizable: function(featdiv) {
         var track = this;
         if (featdiv && (featdiv != null))  {
-            if (dojo.hasClass(featdiv, "ui-resizable"))  {
+            if (domClass.contains(featdiv, "ui-resizable"))  {
             }
             else {
                 var scale = track.gview.bpToPx(1);
@@ -463,8 +479,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
     createAnnotations: function(selection_records)  {
         var target_track = this;
-        var featuresToAdd = new Array();
-        var parentFeatures = new Object();
+        var featuresToAdd = [];
+        var parentFeatures = {};
         var subfeatures = [];
         var strand;
         var parentFeature;
@@ -499,7 +515,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             }
         }
         
-        function process() {
+        var process = function() {
             var keys = Object.keys(parentFeatures);
             var singleParent = keys.length == 1;
             var featureToAdd;
@@ -514,9 +530,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 featureToAdd.set('name',featureToAdd.get('id'));
             }
             featureToAdd.set("strand", strand);
-            var fmin = undefined;
-            var fmax = undefined;
-            featureToAdd.set('subfeatures', new Array());
+            var fmin;
+            var fmax;
+            featureToAdd.set('subfeatures', []);
             for (var i = 0; i < subfeatures.length; ++i) {
                 var subfeature = subfeatures[i];
                 if (!singleParent && SequenceOntologyUtils.cdsTerms[subfeature.get("type")]) {
@@ -545,25 +561,25 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         };
         
         if (strand == -2) {
-            var content = dojo.create("div");
-            var message = dojo.create("div", { className: "confirm_message", innerHTML: "Creating annotation with subfeatures in opposing strands.  Choose strand:" }, content);
-            var buttonsDiv = dojo.create("div", { className: "confirm_buttons" }, content);
-            var plusButton = dojo.create("button", { className: "confirm_button", innerHTML: "Plus" }, buttonsDiv);
-            var minusButton = dojo.create("button", { className: "confirm_button", innerHTML: "Minus" }, buttonsDiv);
-            var cancelButton = dojo.create("button", { className: "confirm_button", innerHTML: "Cancel" }, buttonsDiv);
-            dojo.connect(plusButton, "onclick", function() {
+            var content = domConstruct.create("div");
+            var message = domConstruct.create("div", { className: "confirm_message", innerHTML: "Creating annotation with subfeatures in opposing strands.  Choose strand:" }, content);
+            var buttonsDiv = domConstruct.create("div", { className: "confirm_buttons" }, content);
+            var plusButton = domConstruct.create("button", { className: "confirm_button", innerHTML: "Plus" }, buttonsDiv);
+            var minusButton = domConstruct.create("button", { className: "confirm_button", innerHTML: "Minus" }, buttonsDiv);
+            var cancelButton = domConstruct.create("button", { className: "confirm_button", innerHTML: "Cancel" }, buttonsDiv);
+            on(plusButton, "onclick", function() {
                 strand = 1;
                 target_track.closeDialog();
             });
-            dojo.connect(minusButton, "onclick", function() {
+            on(minusButton, "onclick", function() {
                 strand = -1;
                 target_track.closeDialog();
             });
-            dojo.connect(cancelButton, "onclick", function() {
+            on(cancelButton, "onclick", function() {
                 target_track.closeDialog();
             });
-            var handle = dojo.connect(target_track.popupDialog, "onHide", function() {
-                dojo.disconnect(handle);
+            var handle = on(target_track.popupDialog, "onHide", function() {
+                handle.remove();
                 if (strand != -2) {
                     process();
                 }
@@ -579,8 +595,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     
     createGenericAnnotations: function(feats, type, subfeatType, topLevelType) {
         var target_track = this;
-        var featuresToAdd = new Array();
-        var parentFeatures = new Object();
+        var featuresToAdd = [];
+        var parentFeatures = {};
         for (var i in feats)  {
             var dragfeat = feats[i];
 
@@ -598,10 +614,10 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var featArray = parentFeatures[i];
             if (featArray.isSubfeature) {
                 var parentFeature = featArray[0].parent();
-                var fmin = undefined;
-                var fmax = undefined;
+                var fmin;
+                var fmax;
                 var featureToAdd = JSONUtils.makeSimpleFeature(parentFeature);
-                featureToAdd.set('subfeatures', new Array());
+                featureToAdd.set('subfeatures', []);
                 for (var k = 0; k < featArray.length; ++k) {
                     // var dragfeat = featArray[k];
                     var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
@@ -619,11 +635,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 featureToAdd.set( "end",   fmax );
                 var afeat = JSONUtils.createApolloFeature( featureToAdd, type, true, subfeatType );
                 if (topLevelType) {
-                    var topLevel = new Object();
-                    topLevel.location = dojo.clone(afeat.location);
-                    topLevel.type = dojo.clone(afeat.type);
+                    var topLevel = {};
+                    topLevel.location = lang.clone(afeat.location);
+                    topLevel.type = lang.clone(afeat.type);
                     topLevel.type.name = topLevelType;
-                    topLevel.children = new Array();
+                    topLevel.children = [];
                     topLevel.children.push(afeat);
                     afeat = topLevel;
                 }
@@ -634,11 +650,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                     var dragfeat = featArray[k];
                     var afeat = JSONUtils.createApolloFeature( dragfeat, type, true, subfeatType);
                     if (topLevelType) {
-                        var topLevel = new Object();
-                        topLevel.location = dojo.clone(afeat.location);
-                        topLevel.type = dojo.clone(afeat.type);
+                        var topLevel = {};
+                        topLevel.location = lang.clone(afeat.location);
+                        topLevel.type = lang.clone(afeat.type);
                         topLevel.type.name = topLevelType;
-                        topLevel.children = new Array();
+                        topLevel.children = [];
                         topLevel.children.push(afeat);
                         afeat = topLevel;
                     }
@@ -652,8 +668,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     
     createGenericOneLevelAnnotations: function(feats, type, strandless) {
         var target_track = this;
-        var featuresToAdd = new Array();
-        var parentFeatures = new Object();
+        var featuresToAdd = [];
+        var parentFeatures = {};
         for (var i in feats)  {
             var dragfeat = feats[i];
 
@@ -661,7 +677,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var parentId = is_subfeature ? dragfeat.parent().id() : dragfeat.id();
 
             if (parentFeatures[parentId] === undefined) {
-                parentFeatures[parentId] = new Array();
+                parentFeatures[parentId] = [];
                 parentFeatures[parentId].isSubfeature = is_subfeature;
             }
             parentFeatures[parentId].push(dragfeat);
@@ -671,11 +687,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var featArray = parentFeatures[i];
             if (featArray.isSubfeature) {
                 var parentFeature = featArray[0].parent();
-                var fmin = undefined;
-                var fmax = undefined;
+                var fmin;
+                var fmax;
                 // var featureToAdd = $.extend({}, parentFeature);
                 var featureToAdd = JSONUtils.makeSimpleFeature(parentFeature);
-                featureToAdd.set('subfeatures', new Array());
+                featureToAdd.set('subfeatures', []);
                 for (var k = 0; k < featArray.length; ++k) {
                     // var dragfeat = featArray[k];
                     var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
@@ -724,8 +740,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
     duplicateAnnotations: function(feats)  {
         var track = this;
-        var featuresToAdd = new Array();
-        var subfeaturesToAdd = new Array();
+        var featuresToAdd = [];
+        var subfeaturesToAdd = {};
         var proteinCoding = false;
         for( var i in feats )  {
             var feat = feats[i];
@@ -739,11 +755,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         }
         if (subfeaturesToAdd.length > 0) {
             var feature = new SimpleFeature();
-            var subfeatures = new Array();
+            var subfeatures = [];
             feature.set( 'subfeatures', subfeatures );
-            var fmin = undefined;
-            var fmax = undefined;
-            var strand = undefined;
+            var fmin;
+            var fmax;
+            var strand;
             for (var i = 0; i < subfeaturesToAdd.length; ++i) {
                 var subfeature = subfeaturesToAdd[i];
                 if (fmin === undefined || subfeature.get('start') < fmin) {
@@ -970,7 +986,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var setStart = annot.parent() ? !annot.parent().get("manuallySetTranslationStart") : !annot.get("manuallySetTranslationStart");
         var uid = annot.parent() ? annot.parent().id() : annot.id();
         var feature={ "uniquename": uid };
-        if(setStart) feature.location = { "fmin": coordinate }
+        if(setStart) feature.location = { "fmin": coordinate };
         var features = [ feature ];
         var operation = "set_translation_start";
         var trackName = track.getUniqueTrackName();
@@ -996,7 +1012,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var setEnd = annot.parent() ? !annot.parent().get("manuallySetTranslationEnd") : !annot.get("manuallySetTranslationEnd");
         var uid = annot.parent() ? annot.parent().id() : annot.id();
         var feature={ "uniquename": uid };
-        if(setStart) feature.location = { "fmax": coordinate };
+        if(setEnd) feature.location = { "fmax": coordinate };
         var features = [ feature ];
         var operation = "set_translation_end";
         var trackName = track.getUniqueTrackName();
@@ -1011,21 +1027,20 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
 
     flipStrandForSelectedFeatures: function(records) {
         var track = this;
-        var uniqueNames = new Object();
+        var uniqueNames = {};
+        var uniqueName;
         for (var i in records)  {
-        var record = records[i];
-        var selfeat = record.feature;
-        var seltrack = record.track;
+            var record = records[i];
+            var selfeat = record.feature;
+            var seltrack = record.track;
             var topfeat = this.getTopLevelAnnotation(selfeat);
-            var uniqueName = topfeat.id();
-            // just checking to ensure that all features in selection are from
-            // this track
+            uniqueName = topfeat.id();
             if (seltrack === track)  {
                 uniqueNames[uniqueName] = 1;
             }
         }
         var features = [];
-        for (var uniqueName in uniqueNames) {
+        for (uniqueName in uniqueNames) {
             features.push({ "uniquename": uniqueName });
         }
         var operation = "flip_strand";
@@ -1334,8 +1349,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     getGff3ForSelectedFeatures: function(records) {
         var track = this;
 
-        var content = dojo.create("div", { className: "get_gff3" });
-        var textArea = dojo.create("textarea", { className: "gff3_area", readonly: true }, content);
+        var content = domConstruct.create("div", { className: "get_gff3" });
+        var textArea = domConstruct.create("textarea", { className: "gff3_area", readonly: true }, content);
 
         var fetchGff3 = function() {
             var features = [];
@@ -1356,24 +1371,19 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var operation = "get_gff3";
             var trackName = track.getUniqueTrackName();
             var postData = { "track": trackName, "features": features, "operation": operation };
-            dojo.xhrPost( {
-                postData: JSON.stringify(postData),
-                url: context_path + "/AnnotationEditorService",
+            xhr.post(context_path + "/AnnotationEditorService", {
+                data: JSON.stringify(postData),
                 handleAs: "text",
-                timeout: 5000 * 1000, // Time in milliseconds
-                load: function(response, ioArgs) {
-                    var textAreaContent = response;
-                    dojo.attr(textArea, "innerHTML", textAreaContent);
-                },
-                // The ERROR function will be called in an error case.
-                error: function(response, ioArgs) {
-                    track.handleError(response);
-                    console.log(response);
-                    console.log("Annotation server error--maybe you forgot to login to the server?");
-                    console.error("HTTP status code: ", ioArgs.xhr.status);
-                    return response;
-                }
-
+                timeout: 5000 * 1000
+            }).then(function(response) {
+                var textAreaContent = response;
+                domAttr.set(textArea, "innerHTML", textAreaContent);
+            },function(response, ioArgs) {
+                track.handleError(response);
+                console.log(response);
+                console.log("Annotation server error--maybe you forgot to login to the server?");
+                console.error("HTTP status code: ", ioArgs.xhr.status);
+                return response;
             });
         };
         fetchGff3(records);
@@ -1382,9 +1392,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     },
     searchSequence: function() {
         var track = this;
-        var starts = new Object();
+        var starts = {};
         var browser = track.browser;
-        for (i in browser.allRefs) {
+        for (var i in browser.allRefs) {
             var refSeq = browser.allRefs[i];
             starts[refSeq.name] = refSeq.start;
         }
@@ -1421,30 +1431,22 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     exportData: function(key, options) {
         var track = this;
         var adapter = key;
-        var content = dojo.create("div");
-        var waitingDiv = dojo.create("div", { innerHTML: "<img class='waiting_image' src='plugins/WebApollo/img/loading.gif' />" }, content);
-        var responseDiv = dojo.create("div", { className: "export_response" }, content);
+        var content = domConstruct.create("div");
+        var waitingDiv = domConstruct.create("div", { innerHTML: "<img class='waiting_image' src='plugins/WebApollo/img/loading.gif' />" }, content);
+        var responseDiv = domConstruct.create("div", { className: "export_response" }, content);
 
-        dojo.xhrGet( {
-		url: context_path + "/IOService?operation=write&adapter=" + adapter + "&tracks=" + track.getUniqueTrackName() + "&" + options,
-		handleAs: "text",
-		load: function(response, ioArgs) {
+        xhr.get(context_path + "/IOService?operation=write&adapter=" + adapter + "&tracks=" + track.getUniqueTrackName() + "&" + options, {
+            handleAs: "text"
+        }).then(function(response) {
 		    console.log("/IOService returned, called load()");
-		    dojo.style(waitingDiv, { display: "none" } );
+		    domStyle.set(waitingDiv, { display: "none" } );
 		    response = response.replace("href='", "href='../");
-
-                /*
-                 * var iframeDoc = responseIFrame.contentWindow.document;
-                 * iframeDoc.open(); iframeDoc.write(response); iframeDoc.close();
-                 */
-                responseDiv.innerHTML = response;
-            }, 
-            // The ERROR function will be called in an error case.
-            error: function(response, ioArgs) {
-                dojo.style(waitingDiv, { display: "none" } );
-                responseDiv.innerHTML = "Unable to export data";
-                track.handleError(response);
-            }
+            responseDiv.innerHTML = response;
+        }, 
+        function(response) {
+            domStyle.set(waitingDiv, { display: "none" } );
+            responseDiv.innerHTML = "Unable to export data";
+            track.handleError(response);
         });
         track.openDialog("Export " + key, content);
     }, 
@@ -1457,25 +1459,6 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var coordinate = (vregion.start + vregion.end)/2;
         var selected = this.selectionManager.getSelection();
         if (selected && (selected.length > 0)) {
-            
-            function centerAtBase(position) {
-                track.gview.centerAtBase(position, false);
-                track.selectionManager.removeFromSelection(selected[0]);
-                var subfeats = selfeat.get("subfeatures");
-                for (var i = 0; i < subfeats.length; ++i) {
-                    if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
-                        continue;
-                    }
-                    // skip CDS features
-                    if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
-                        continue;
-                    }
-                    if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
-                        track.selectionManager.addToSelection( { feature: subfeats[i], track: track } );
-                        break;
-                    }
-                }
-            };
             
             var selfeat = selected[0].feature;
             // find current center genome coord, compare to subfeatures,
@@ -1495,7 +1478,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var pmin = selfeat.get('start');
             var pmax = selfeat.get('end');
             if ((coordinate - pmax) > 10) {
-                centerAtBase(pmin);
+                this.centerAtBase(pmin);
             }
             else  {
                 var childfeats = selfeat.children();                
@@ -1515,12 +1498,29 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 // find closest edge right of current coord
                 if (coordDelta != Number.MAX_VALUE)  {
                     var newCenter = coordinate + coordDelta;
-                    centerAtBase(newCenter);
+                    this.centerAtBase(newCenter);
                 }
             }
         }
     }, 
-
+    centerAtBase: function(position) {
+        this.gview.centerAtBase(position, false);
+        this.selectionManager.removeFromSelection(selected[0]);
+        var subfeats = selfeat.get("subfeatures");
+        for (var i = 0; i < subfeats.length; ++i) {
+            if (this.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
+                continue;
+            }
+            // skip CDS features
+            if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
+                continue;
+            }
+            if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
+                this.selectionManager.addToSelection( { feature: subfeats[i], track: this } );
+                break;
+            }
+        }
+    },
     scrollToPreviousEdge: function(event) {
         // var coordinate = this.getGenomeCoord(event);
         var track = this;
@@ -1528,24 +1528,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var coordinate = (vregion.start + vregion.end)/2;
         var selected = this.selectionManager.getSelection();
         if (selected && (selected.length > 0)) {
-            function centerAtBase(position) {
-                track.gview.centerAtBase(position, false);
-                track.selectionManager.removeFromSelection(selected[0]);
-                var subfeats = selfeat.get("subfeatures");
-                for (var i = 0; i < subfeats.length; ++i) {
-                    if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
-                        continue;
-                    }
-                    // skip CDS features
-                    if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
-                        continue;
-                    }
-                    if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
-                        track.selectionManager.addToSelection( { feature: subfeats[i], track: track } );
-                        break;
-                    }
-                }
-            };
+            
             
             var selfeat = selected[0].feature;
             // find current center genome coord, compare to subfeatures,
@@ -1565,7 +1548,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var pmin = selfeat.get('start');
             var pmax = selfeat.get('end');
             if ((pmin - coordinate) > 10) {
-                centerAtBase(pmax);
+                this.centerAtBase(pmax);
             }
             else  {
                 var childfeats = selfeat.children();                
@@ -1585,7 +1568,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 // find closest edge right of current coord
                 if (coordDelta != Number.MAX_VALUE)  {
                     var newCenter = coordinate - coordDelta;
-                    centerAtBase(newCenter);
+                    this.centerAtBase(newCenter);
                 }
             }
         }
@@ -1684,8 +1667,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     },
     
     logout: function() {
-        dojo.xhrPost( {
-            url: context_path + "/Login?operation=logout",
+        xhr.post( context_path + "/Login?operation=logout", {
             handleAs: "json",
             timeout: 5 * 1000 // Time in milliseconds
         });
@@ -1693,24 +1675,22 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     
     login: function() {
         var track = this;
-        dojo.xhrGet( {
-            url: context_path + "/Login",
+        xhr.get(context_path + "/Login", {
             handleAs: "text",
-            timeout: 5 * 60,
-            load: function(response, ioArgs) {
-                var dialog = new dojoxDialogSimple({
-                    preventCache: true,
-                    refreshOnShow: true,
-                    executeScripts: true
-                });
-                if (track.config.disableJBrowseMode) {
-                    dialog.hide = function() { };
-                }
-                dialog.startup();
-                dialog.set("title", "Login");
-                dialog.set("content", response);
-                dialog.show();
+            timeout: 5 * 60
+        }).then(function(response) {
+            var dialog = new dojoxDialogSimple({
+                preventCache: true,
+                refreshOnShow: true,
+                executeScripts: true
+            });
+            if (track.config.disableJBrowseMode) {
+                dialog.hide = function() { };
             }
+            dialog.startup();
+            dialog.set("title", "Login");
+            dialog.set("content", response);
+            dialog.show();
         });
     },
     
@@ -1718,11 +1698,11 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     
     initAnnotContextMenu: function() {
         var thisB = this;
-        contextMenuItems = new Array();
-        annot_context_menu = new dijit.Menu({});
+        contextMenuItems = [];
+        annot_context_menu = new dijitMenu({});
         var permission = thisB.webapollo.annotService.permission;
         var index = 0;
-        annot_context_menu.addChild(new dijit.MenuItem( {
+        annot_context_menu.addChild(new dijitMenuItem( {
             label: "Get sequence",
             onClick: function(event) {
                 thisB.getSequence();
@@ -1730,7 +1710,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         } ));
         contextMenuItems["get_sequence"] = index++;
 
-        annot_context_menu.addChild(new dijit.MenuItem( {
+        annot_context_menu.addChild(new dijitMenuItem( {
             label: "Get gff3",
             onClick: function(event) {
                 thisB.getGff3();
@@ -1738,7 +1718,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         } ));
         contextMenuItems["get_gff3"] = index++;
 
-        annot_context_menu.addChild(new dijit.MenuItem( {
+        annot_context_menu.addChild(new dijitMenuItem( {
             label: "Zoom to base level",
             onClick: function(event) {
                 if (thisB.getMenuItem("zoom_to_base_level").get("label") == "Zoom to base level") {
@@ -1751,9 +1731,9 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         } ));
         contextMenuItems["zoom_to_base_level"] = index++;
         if (!(this.webapollo.annotService.hasWritePermission())) {
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Information Viewer (alt-click)",
                 onClick: function(event) {
                     thisB.getAnnotationInfoEditor();
@@ -1762,159 +1742,159 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             contextMenuItems["annotation_info_editor"] = index++;
         }
         if (this.webapollo.annotService.hasWritePermission()) {
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Edit Information (alt-click)",
                 onClick: function(event) {
                     thisB.getAnnotationInfoEditor();
                 }
             } ));
             contextMenuItems["annotation_info_editor"] = index++;
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Delete",
                 onClick: function() {
                     thisB.deleteSelectedFeatures();
                 }
             } ));
             contextMenuItems["delete"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Merge",
                 onClick: function() {
                     thisB.mergeSelectedFeatures();
                 }
             } ));
             contextMenuItems["merge"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Split",
                 onClick: function(event) {
                     thisB.splitSelectedFeatures(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["split"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Duplicate",
                 onClick: function(event) {
                     thisB.duplicateSelectedFeatures(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["duplicate"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Make Intron",
                 onClick: function(event) {
                     thisB.makeIntron(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["make_intron"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Move to Opposite Strand",
                 onClick: function(event) {
                     thisB.flipStrand();
                 }
             } ));
             contextMenuItems["flip_strand"] = index++;
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
 
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set Translation Start",
                 onClick: function(event) {
                     thisB.setTranslationStart(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["set_translation_start"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set Translation End",
                 onClick: function(event) {
                     thisB.setTranslationEnd(thisB.annot_context_mousedown);
                 }
             } ));
             contextMenuItems["set_translation_end"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set Longest ORF",
                 onClick: function(event) {
                     thisB.setLongestORF();
                 }
             } ));
             contextMenuItems["set_longest_orf"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set Readthrough Stop Codon",
                 onClick: function(event) {
                     thisB.setReadthroughStopCodon();
                 }
             } ));
             contextMenuItems["set_readthrough_stop_codon"] = index++;
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
             
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set as 5' End",
                 onClick: function(event) {
                     thisB.setAsFivePrimeEnd();
                 }
             } ));
             contextMenuItems["set_as_five_prime_end"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set as 3' End",
                 onClick: function(event) {
                     thisB.setAsThreePrimeEnd();
                 }
             } ));
             contextMenuItems["set_as_three_prime_end"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Set Both Ends",
                 onClick: function(event) {
                     thisB.setBothEnds();
                 }
             } ));
             contextMenuItems["set_both_ends"] = index++;
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
             contextMenuItems["set_downstream_donor"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                     label: "Set to Downstream Splice Donor",
                     onClick: function(event) {
                             thisB.setToDownstreamDonor();
                     }
             }));
             contextMenuItems["set_upstream_donor"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                     label: "Set to Upstream Splice Donor",
                     onClick: function(event) {
                             thisB.setToUpstreamDonor();
                     }
             }));
             contextMenuItems["set_downstream_acceptor"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                     label: "Set to Downstream Splice Acceptor",
                     onClick: function(event) {
                             thisB.setToDownstreamAcceptor();
                     }
             }));
             contextMenuItems["set_upstream_acceptor"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                     label: "Set to Upstream Splice Acceptor",
                     onClick: function(event) {
                             thisB.setToUpstreamAcceptor();
                     }
             }));
-            annot_context_menu.addChild(new dijit.MenuSeparator());
+            annot_context_menu.addChild(new dijitMenuSeparator());
             index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Undo",
                 onClick: function(event) {
                     thisB.undo();
                 }
             } ));
             contextMenuItems["undo"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Redo",
                 onClick: function(event) {
                     thisB.redo();
                 }
             } ));
             contextMenuItems["redo"] = index++;
-            annot_context_menu.addChild(new dijit.MenuItem( {
+            annot_context_menu.addChild(new dijitMenuItem( {
                 label: "Show History",
                 onClick: function(event) {
                     thisB.getHistory();
@@ -1928,8 +1908,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             if (thisB.webapollo.annotService.hasWritePermission()) {
                 thisB.updateMenu();
             }
-            dojo.forEach(this.getChildren(), function(item, idx, arr) {
-                if (item instanceof dijit.MenuItem) {
+            array.forEach(this.getChildren(), function(item) {
+                if (item.isInstanceOf(dijitMenuItem)) {
                     item._setSelected(false);
                     // check for _onUnhover, since latest
                     // dijit.MenuItem does not have _onUnhover()
@@ -1951,28 +1931,22 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     initSaveMenu: function()  {
         var track = this;
         var permission = this.webapollo.annotService.permission;
-        dojo.xhrPost( {
+        xhr.post( context_path + "/AnnotationEditorService", {
             sync: true,
-            postData: JSON.stringify({ "track": track.getUniqueTrackName(), "operation": "get_data_adapters" }),
-            url: context_path + "/AnnotationEditorService",
+            data: JSON.stringify({ "track": track.getUniqueTrackName(), "operation": "get_data_adapters" }),
             handleAs: "json",
-            timeout: 5 * 1000, // Time in milliseconds
-            // The LOAD function will be called on a successful response.
-            load: function(response, ioArgs) { //
-                var dataAdapters = response.data_adapters;
-                for (var i = 0; i < dataAdapters.length; ++i) {
-                    var dataAdapter = dataAdapters[i];
-                    if (permission & dataAdapter.permission) {
-                        track.exportAdapters.push( dataAdapter );
-                    }
+            timeout: 5 * 1000 // Time in milliseconds
+        }).then(function(response) { //
+            var dataAdapters = response.data_adapters;
+            for (var i = 0; i < dataAdapters.length; ++i) {
+                var dataAdapter = dataAdapters[i];
+                if (permission & dataAdapter.permission) {
+                    track.exportAdapters.push( dataAdapter );
                 }
-                // remake track label pulldown menu so will include
-                // dataAdapter submenu
-                track.makeTrackMenu();
-            },
-            error: function(response, ioArgs) { //
-                // track.handleError(response);
             }
+            // remake track label pulldown menu so will include
+            // dataAdapter submenu
+            track.makeTrackMenu();
         });
     }, 
 
@@ -1981,20 +1955,20 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var track = this;
         var options = this._trackMenuOptions();
         if( options && options.length && this.label && this.labelMenuButton && this.exportAdapters.length > 0) {
-            var dataAdaptersMenu = new dijit.Menu();
+            var dataAdaptersMenu = new dijitMenu();
             for (var i=0; i<this.exportAdapters.length; i++) {
                 var dataAdapter = this.exportAdapters[i];
                 if (dataAdapter.data_adapters) {
-                    var submenu = new dijit.Menu({
+                    var submenu = new dijitMenu({
                         label: dataAdapter.key
                     });
-                    dataAdaptersMenu.addChild(new dijit.PopupMenuItem({
+                    dataAdaptersMenu.addChild(new dijitPopupMenuItem({
                         label: dataAdapter.key,
                         popup: submenu
                     }));
                     for (var j = 0; j < dataAdapter.data_adapters.length; ++j) {
                         var subAdapter = dataAdapter.data_adapters[j];
-                        submenu.addChild(new dijit.MenuItem( {
+                        submenu.addChild(new dijitMenuItem( {
                             label: subAdapter.key,
                             onClick: function(key, options) {
                                 return function() {
@@ -2005,7 +1979,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                     }
                 }
                 else {
-                    dataAdaptersMenu.addChild(new dijit.MenuItem( {
+                    dataAdaptersMenu.addChild(new dijitMenuItem( {
                         label: dataAdapter.key,
                         onClick: function(key, options) {
                             return function() {
@@ -2023,7 +1997,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 if (mitems[mindex].type == "dijit/MenuSeparator")  { break; }
             }
              
-            var savePopup = new dijit.PopupMenuItem({
+            var savePopup = new dijitPopupMenuItem({
                     label: "Save track data",
                     iconClass: 'dijitIconSave',
                     popup: dataAdaptersMenu });
@@ -2041,7 +2015,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var id = "popup_dialog";
 
         // deregister widget (needed if changing refseq without reloading page)
-        var widget = dijit.registry.byId(id);
+        var widget = registry.byId(id);
         if (widget) {
             widget.destroy();
         }
