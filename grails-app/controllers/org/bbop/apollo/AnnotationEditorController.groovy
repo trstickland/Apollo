@@ -1,5 +1,6 @@
 package org.bbop.apollo
 
+import org.apache.shiro.session.Session
 import org.bbop.apollo.gwt.shared.FeatureStringEnum
 
 import org.apache.shiro.SecurityUtils
@@ -256,9 +257,12 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
      * @return
      */
     def getFeatures() {
-
         JSONObject returnObject = (JSONObject) JSON.parse(params.data)
         returnObject.put(FeatureStringEnum.USERNAME.value,SecurityUtils.subject.principal)
+        Session session = SecurityUtils.subject.getSession(false)
+        String organismId = session.getAttribute(FeatureStringEnum.ORGANISM_ID.value)
+        println "found the session to get features from ${organismId} from session ${session}"
+        returnObject.put(FeatureStringEnum.ORGANISM_ID.value,organismId)
         render requestHandlingService.getFeatures(returnObject)
     }
 
@@ -556,10 +560,14 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         log.debug "Input String:  annotation editor service ${inputString}"
         JSONObject rootElement = (JSONObject) JSON.parse(inputString)
         rootElement.put(FeatureStringEnum.USERNAME.value,principal.name)
+        // TODO: get the organism from session and copy in
+        Session session = SecurityUtils.subject.getSession(false)
+        String organismId = session.getAttribute(FeatureStringEnum.ORGANISM_ID.value)
+        rootElement.put(FeatureStringEnum.ORGANISM_ID.value,organismId)
 
 
 
-        println "AEC::root element: ${rootElement as JSON}"
+        log.debug "AEC::root element: ${rootElement as JSON}"
         String operation = ((JSONObject) rootElement).get(REST_OPERATION)
 
         String operationName = underscoreToCamelCase(operation)

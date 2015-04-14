@@ -47,6 +47,7 @@ class RequestHandlingService {
 //        dataListenerHandler.addDataStoreChangeListener(this);
 //    }
 
+
     private String underscoreToCamelCase(String underscore) {
         if (!underscore || underscore.isAllWhitespace()) {
             return ''
@@ -152,6 +153,7 @@ class RequestHandlingService {
             jsonObject.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature));
         }
     }
+
 
     // is this used?
     def deleteNonPrimaryDbxrefs(JSONObject inputObject) {
@@ -342,10 +344,23 @@ class RequestHandlingService {
     }
 
 
-    JSONObject getFeatures(JSONObject inputObject) {
+    private Sequence getSequenceAndCheckPermissions(JSONObject inputObject,PermissionEnum permissionEnum){
         String trackName = fixTrackHeader(inputObject.track)
-        Sequence sequence = Sequence.findByName(trackName)
-        permissionService.checkPermissions(inputObject, sequence.organism, PermissionEnum.READ)
+        Organism organism = Organism.findById(Long.valueOf(inputObject.getString(FeatureStringEnum.ORGANISM_ID.value)))
+        println "org ${organism} from Org ID: ${inputObject.getString(FeatureStringEnum.ORGANISM_ID.value)}"
+        permissionService.checkPermissions(inputObject, organism, permissionEnum)
+        return Sequence.findByNameAndOrganism(trackName,organism)
+    }
+
+//    private Sequence getSequence(JSONObject inputObject){
+//        String trackName = fixTrackHeader(inputObject.track)
+//        Organism organism = Organism.findById(Long.valueOf(inputObject.getString(FeatureStringEnum.ORGANISM_ID.value)))
+//        return Sequence.findByNameAndOrganism(trackName,organism)
+//    }
+
+    JSONObject getFeatures(JSONObject inputObject) {
+        Sequence sequence = getSequenceAndCheckPermissions(inputObject,PermissionEnum.READ)
+        println "seqeuence ID ${sequence}"
 
         Set<Feature> featureSet = new HashSet<>()
 
@@ -466,10 +481,7 @@ class RequestHandlingService {
         JSONObject returnObject = createJSONFeatureContainer()
 
         log.info "RHS::adding transcript return object ${inputObject?.size()}"
-        String trackName = fixTrackHeader(inputObject.track)
-        log.info "final trackNAme [${trackName}]"
-        Sequence sequence = Sequence.findByName(trackName)
-        permissionService.checkPermissions(inputObject, sequence.organism, PermissionEnum.WRITE)
+        Sequence sequence = getSequenceAndCheckPermissions(inputObject,PermissionEnum.WRITE)
 
         log.info "sequences avaialble ${Sequence.count} -> ${Sequence.first()?.name}"
         log.info "sequence ${sequence}"
@@ -514,9 +526,7 @@ class RequestHandlingService {
         JSONObject transcriptJSONObject = features.getJSONObject(0);
 
         Transcript transcript = Transcript.findByUniqueName(transcriptJSONObject.getString(FeatureStringEnum.UNIQUENAME.value))
-        String trackName = fixTrackHeader(inputObject.track)
-        Sequence sequence = Sequence.findByName(trackName)
-        permissionService.checkPermissions(inputObject, sequence.organism, PermissionEnum.WRITE)
+        Sequence sequence = getSequenceAndCheckPermissions(inputObject,PermissionEnum.WRITE)
 
         boolean setStart = transcriptJSONObject.has(FeatureStringEnum.LOCATION.value);
         if (!setStart) {

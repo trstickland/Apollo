@@ -128,11 +128,13 @@ class OrganismController {
         log.debug "organismId ${organismId}"
         Organism organism = Organism.findById(organismId as Long)
         if (organism) {
-            log.debug "found the organism ${organism}"
+            println "changing organims to ${organism}"
+            log.debug "found the organism ${organism} from session ${session}"
 //            request.session.setAttribute("organismJBrowseDirectory", organism.directory)
             session.setAttribute(FeatureStringEnum.ORGANISM_JBROWSE_DIRECTORY.value,organism.directory)
 //            session.setAttribute(FeatureStringEnum.SEQUENCE_NAME.value,sequence.name)
             session.setAttribute(FeatureStringEnum.ORGANISM_ID.value,organism.id)
+            session.setAttribute(FeatureStringEnum.ORGANISM.value,organism.commonName)
         } else {
             log.debug "no organism found"
         }
