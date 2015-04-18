@@ -13,8 +13,8 @@ done_message () {
 echo > setup.log;
 echo -n "Installing Perl prerequisites ..."
 if [ -f bin/cpanm ]; then 
-	echo  "Prerequisites installed, finished.";
-	exit 0; 
+    echo  "Prerequisites installed, finished.";
+    exit 0; 
 fi
 
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
@@ -24,12 +24,9 @@ fi;
 ( set -x;
   cd web-app/jbrowse;
   chmod +x bin/cpanm
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey < /dev/null;
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey < /dev/null;
   bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
   bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
   set -e;
-  bin/cpanm -v --notest -l ../../../../extlib DBI DBD::Pg Crypt::PBKDF2 LWP::UserAgent JSON Mozilla::CA Term::ReadKey < /dev/null;
   bin/cpanm -v --notest -l ../../../../extlib/ --installdeps .< /dev/null;
   cd -;
   cp -r web-app/jbrowse/bin/ bin;

@@ -23,9 +23,9 @@ grails {
                 dbCreate = "update" // one of 'create', 'create-drop', 'update', 'validate', ''
                 username = "<CHANGEME>"
                 password = "<CHANGEME>"
-                driverClassName = "com.postgresql.Driver"
+                driverClassName = "org.postgresql.Driver"
                 dialect = org.hibernate.dialect.PostgresPlusDialect
-                url = "jdbc:mysql://localhost/apollo-production"
+                url = "jdbc:postgresql://localhost/apollo-production"
                 properties {
                     // See http://grails.org/doc/latest/guide/conf.html#dataSource for documentation
                     jmxEnabled = true
