@@ -31,35 +31,38 @@ class FeatureEventService {
         addNewFeatureEventWithUser(featureOperation, uniqueName, inputCommand, jsonObject, user)
     }
 
-    FeatureEvent addNewFeatureEventWithUser(FeatureOperation featureOperation, String uniqueName, JSONObject commandObject, JSONObject jsonObject, User user) {
+
+    FeatureEvent addNewFeatureEvent(FeatureOperation featureOperation, String uniqueName, JSONObject commandObject
+                                            , JSONArray oldFeaturesArray,JSONArray newFeaturesArray, User user) {
 
         FeatureEvent.executeUpdate("update FeatureEvent  fe set fe.current = :current where fe.uniqueName = :uniqueName", [current: false, uniqueName: uniqueName]);
-        JSONArray newFeatureArray = new JSONArray()
-        newFeatureArray.add(jsonObject)
         FeatureEvent featureEvent = new FeatureEvent(
                 editor: user
                 , uniqueName: uniqueName
                 , operation: featureOperation.name()
                 , current: true
                 , originalJsonCommand: commandObject.toString()
-                , newFeaturesJsonArray: newFeatureArray.toString()
-                , oldFeaturesJsonArray: new JSONArray().toString()
+                , newFeaturesJsonArray: newFeaturesArray.toString()
+                , oldFeaturesJsonArray: oldFeaturesArray.toString()
                 , dateCreated: new Date()
                 , lastUpdated: new Date()
         ).save()
 
 
         return featureEvent
+    }
 
+    FeatureEvent addNewFeatureEventWithUser(FeatureOperation featureOperation, String uniqueName, JSONObject commandObject, JSONObject jsonObject, User user) {
+        JSONArray oldJsonArray = new JSONArray()
+        oldJsonArray.add(jsonObject)
+        JSONArray newJsonArray = new JSONArray()
+        return addNewFeatureEvent(featureOperation,uniqueName,commandObject,oldJsonArray,newJsonArray,user)
     }
 
     FeatureEvent addNewFeatureEventWithUser(FeatureOperation featureOperation, Feature feature, JSONObject inputCommand, User user) {
         return addNewFeatureEventWithUser(featureOperation, feature.uniqueName, inputCommand, featureService.convertFeatureToJSON(feature), user)
     }
 
-//    FeatureEvent addNewFeatureEvent(FeatureOperation featureOperation, String uniqueName, JSONObject oldJsonObject,JSONObject newJsonObject) {
-//        return addNewFeatureEventWithUser(featureOperation,uniqueName,oldJsonObject,newJsonObject,User user)
-//    }
 
     def addNewFeatureEvent(FeatureOperation featureOperation, String uniqueName, JSONObject inputCommand, JSONObject oldJsonObject, JSONObject newJsonObject, User user) {
         JSONArray newFeatureArray = new JSONArray()
@@ -67,20 +70,7 @@ class FeatureEventService {
         JSONArray oldFeatureArray = new JSONArray()
         oldFeatureArray.add(oldJsonObject)
 
-        FeatureEvent.executeUpdate("update FeatureEvent  fe set fe.current = 'f' ");
-        FeatureEvent featureEvent = new FeatureEvent(
-                editor: user
-                , uniqueName: uniqueName
-                , operation: featureOperation.name()
-                , current: true
-                , originalJsonCommand: inputCommand.toString()
-                , newFeaturesJsonArray: newFeatureArray.toString()
-                , oldFeaturesJsonArray: oldFeatureArray.toString()
-                , dateCreated: new Date()
-                , lastUpdated: new Date()
-        ).save()
-
-        return featureEvent
+        return addNewFeatureEvent(featureOperation,uniqueName,inputCommand,oldFeatureArray,newFeatureArray,user)
     }
 
     def deleteHistory(String uniqueName) {

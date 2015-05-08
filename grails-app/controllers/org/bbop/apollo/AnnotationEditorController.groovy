@@ -47,6 +47,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
     def permissionService
     def preferenceService
     def sequenceSearchService
+    def overlapperService
 
 
     def index() {
@@ -160,15 +161,14 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
     }
 
     /**
-     * {"features":[{"history":[{"operation":"ADD_TRANSCRIPT","editor":"demo","features":[{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"gene","cv":{"name":"sequence"}},"name":"GB48495-RA","children":[{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"mRNA","cv":{"name":"sequence"}},"properties":[{"value":"demo","type":{"name":"owner","cv":{"name":"feature_property"}}}],"uniquename":"92B60BEAD109A624CEF0FCEB35B43626","type":{"name":"exon","cv":{"name":"sequence"}},"date_last_modified":1429620837934,"parent_id":"9F9DC83A33887BCF8A04602BA64400DE"},{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"mRNA","cv":{"name":"sequence"}},"uniquename":"9F9DC83A33887BCF8A04602BA64400DE-CDS","type":{"name":"CDS","cv":{"name":"sequence"}},"date_last_modified":1429620837936,"parent_id":"9F9DC83A33887BCF8A04602BA64400DE"}],"properties":[{"value":"demo","type":{"name":"owner","cv":{"name":"feature_property"}}}],"uniquename":"9F9DC83A33887BCF8A04602BA64400DE","type":{"name":"mRNA","cv":{"name":"sequence"}},"date_last_modified":1429620837936,"parent_id":"B17EAF82B869C17A0F37A2B12E552E9C"}],"current":true,"date":"4/21/15 5:53 AM"}],"uniquename":"9F9DC83A33887BCF8A04602BA64400DE"}]}
-     * @return
+     *{"features":[{"history":[{"operation":"ADD_TRANSCRIPT","editor":"demo","features":[{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"gene","cv":{"name":"sequence"}},"name":"GB48495-RA","children":[{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"mRNA","cv":{"name":"sequence"}},"properties":[{"value":"demo","type":{"name":"owner","cv":{"name":"feature_property"}}}],"uniquename":"92B60BEAD109A624CEF0FCEB35B43626","type":{"name":"exon","cv":{"name":"sequence"}},"date_last_modified":1429620837934,"parent_id":"9F9DC83A33887BCF8A04602BA64400DE"},{"location":{"fmin":1248,"strand":-1,"fmax":1422},"parent_type":{"name":"mRNA","cv":{"name":"sequence"}},"uniquename":"9F9DC83A33887BCF8A04602BA64400DE-CDS","type":{"name":"CDS","cv":{"name":"sequence"}},"date_last_modified":1429620837936,"parent_id":"9F9DC83A33887BCF8A04602BA64400DE"}],"properties":[{"value":"demo","type":{"name":"owner","cv":{"name":"feature_property"}}}],"uniquename":"9F9DC83A33887BCF8A04602BA64400DE","type":{"name":"mRNA","cv":{"name":"sequence"}},"date_last_modified":1429620837936,"parent_id":"B17EAF82B869C17A0F37A2B12E552E9C"}],"current":true,"date":"4/21/15 5:53 AM"}],"uniquename":"9F9DC83A33887BCF8A04602BA64400DE"}]}* @return
      */
     def getHistoryForFeatures() {
         log.debug "getting history !! ${params}"
         JSONObject inputObject = (JSONObject) JSON.parse(params.data)
         inputObject.put(FeatureStringEnum.USERNAME.value, SecurityUtils.subject.principal)
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
-        permissionService.checkPermissions(inputObject,PermissionEnum.READ)
+        permissionService.checkPermissions(inputObject, PermissionEnum.READ)
 
         JSONObject historyContainer = createJSONFeatureContainer();
         DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
@@ -177,9 +177,11 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             String uniqueName = jsonFeature.get(FeatureStringEnum.UNIQUENAME.value)
             Feature feature = Feature.findByUniqueName(uniqueName)
 
+            JSONObject originalFeatureJson = featureService.convertFeatureToJSON(feature)
+
             JSONArray history = new JSONArray();
             jsonFeature.put(FeatureStringEnum.HISTORY.value, history);
-            List<FeatureEvent> transactionList = FeatureEvent.findAllByUniqueName(feature.uniqueName,[sort:"dateCreated",order:"asc"])
+            List<FeatureEvent> transactionList = FeatureEvent.findAllByUniqueName(feature.uniqueName, [sort: "dateCreated", order: "asc"])
             for (int j = 0; j < transactionList.size(); ++j) {
                 FeatureEvent transaction = transactionList.get(j);
                 JSONObject historyItem = new JSONObject();
@@ -188,29 +190,31 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
                 historyItem.put(FeatureStringEnum.DATE.value, dateFormat.format(transaction.dateCreated));
                 if (transaction.current) {
                     historyItem.put(FeatureStringEnum.CURRENT.value, true);
-                }
-                else{
+                } else {
                     historyItem.put(FeatureStringEnum.CURRENT.value, false);
                 }
                 JSONArray historyFeatures = new JSONArray();
                 historyItem.put(FeatureStringEnum.FEATURES.value, historyFeatures);
 
-                if(transaction.newFeaturesJsonArray){
-                    JSONArray newFeaturesJsonArray =(JSONArray) JSON.parse(transaction.newFeaturesJsonArray)
-                    for ( int featureIndex  = 0 ; featureIndex < newFeaturesJsonArray.size() ; featureIndex++) {
-                        JSONObject featureJsonObject = newFeaturesJsonArray.getJSONObject(featureIndex)
-                        // TODO: this needs to be functional
-                        if (transaction.getOperation().equals(FeatureOperation.SPLIT_TRANSCRIPT.name())) {
-////                        if (gbolFeature.overlaps(f)) {
-//                            if (overlapperService.overlaps(feature.featureLocation,f.featureLocation,true)) {
-////                                if (f.getUniqueName().equals(jsonFeature.getString("uniquename"))) {
-//                            historyFeatures.put(featureService.convertFeatureToJSON(f));
-                        throw new RuntimeException("split transcript operations not supported yet")
+                if (transaction.newFeaturesJsonArray) {
+                    JSONArray newFeaturesJsonArray = (JSONArray) JSON.parse(transaction.newFeaturesJsonArray)
+                    for (int featureIndex = 0; featureIndex < newFeaturesJsonArray.size(); featureIndex++) {
+                        println "josn object ${newFeaturesJsonArray.get(featureIndex).class.name}"
+                        JSONObject featureJsonObject
+                        if (newFeaturesJsonArray.get(featureIndex).class.name == String.class.name) {
+                            featureJsonObject = (JSONObject) JSON.parse(newFeaturesJsonArray.getString(featureIndex))
+                        } else {
+                            featureJsonObject = newFeaturesJsonArray.getJSONObject(featureIndex)
                         }
-//                    } else {
-//                        historyFeatures.put(featureService.convertFeatureToJSON(f));
-                        historyFeatures.put(featureJsonObject);
-//                    }
+                        // TODO: this needs to be functional
+                        if (transaction.getOperation().equals(FeatureOperation.SPLIT_TRANSCRIPT)) {
+                            if(overlapperService.overlapsJson(originalFeatureJson,featureJsonObject)){
+                                historyFeatures.add(featureJsonObject)
+                            }
+                        }
+                        else{
+                            historyFeatures.put(featureJsonObject);
+                        }
                     }
                     history.put(historyItem);
                 }
@@ -372,10 +376,9 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
     def getOrganism() {
         Organism organism = preferenceService.getCurrentOrganismForCurrentUser()
-        if(organism){
+        if (organism) {
             render organism as JSON
-        }
-        else {
+        } else {
             render new JSONObject()
         }
     }

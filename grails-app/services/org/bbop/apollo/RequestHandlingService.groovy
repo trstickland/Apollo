@@ -1693,6 +1693,9 @@ class RequestHandlingService {
         Exon exon2 = Exon.findByUniqueName(featuresArray.getJSONObject(1).getString(FeatureStringEnum.UNIQUENAME.value))
 
         Transcript transcript1 = exonService.getTranscript(exon1)
+        String originalUniqueName = transcript1.uniqueName
+        JSONObject originalObject = featureService.convertFeatureToJSON(transcript1)
+
         Transcript transcript2 = transcriptService.splitTranscript(transcript1, exon1, exon2)
 
         featureService.updateNewGsolFeatureAttributes(transcript2, sequence);
@@ -1799,6 +1802,17 @@ class RequestHandlingService {
         for (Transcript t : exon1Transcripts) {
             updateContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(t));
         }
+
+        JSONArray oldJsonArray =new JSONArray()
+        oldJsonArray.add(originalObject)
+
+        JSONArray newJsonArray =new JSONArray()
+        newJsonArray.add(topLevelExonFeature)
+
+        featureEventService.addNewFeatureEvent(FeatureOperation.SPLIT_TRANSCRIPT, originalUniqueName, inputObject
+                ,oldJsonArray
+                ,newJsonArray
+                ,permissionService.getActiveUser(inputObject))
 
         AnnotationEvent updateAnnotationEvent = new AnnotationEvent(
                 features: updateContainer

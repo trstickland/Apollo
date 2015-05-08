@@ -1,7 +1,10 @@
 package org.bbop.apollo
 
+import grails.converters.JSON
 import grails.transaction.Transactional
+import org.bbop.apollo.gwt.shared.FeatureStringEnum
 import org.bbop.apollo.sequence.Overlapper
+import org.codehaus.groovy.grails.web.json.JSONObject
 
 @Transactional(readOnly = true)
 class OverlapperService implements Overlapper{
@@ -9,7 +12,8 @@ class OverlapperService implements Overlapper{
 
     def transcriptService
     def exonService 
-    def configWrapperService 
+    def configWrapperService
+    def featureService
 
     @Override
     boolean overlaps(Transcript transcript, Gene gene) {
@@ -98,23 +102,47 @@ class OverlapperService implements Overlapper{
         return overlaps(leftFeature.featureLocation, rightFeature.featureLocation, compareStrands)
     }
 
+    boolean overlapsJson(JSONObject leftFeatureJsonObject , JSONObject rightFeatureJsonObject, boolean compareStrands = true) {
+//        Feature rightFeature = featureService.convertJSONToFeature(rightFeatureJsonObject)
+        println "left ${leftFeatureJsonObject as JSON}"
+        println "right ${rightFeatureJsonObject as JSON}"
+        JSONObject leftJsonFeatureLocation = leftFeatureJsonObject.getJSONObject(FeatureStringEnum.LOCATION.value);
+        JSONObject rightJsonFeatureLocation = rightFeatureJsonObject.getJSONObject(FeatureStringEnum.LOCATION.value);
+        boolean overlaps = overlapsValues(
+                leftJsonFeatureLocation.getInt(FeatureStringEnum.FMIN.value),
+                leftJsonFeatureLocation.getInt(FeatureStringEnum.FMAX.value),
+                leftJsonFeatureLocation.getInt(FeatureStringEnum.STRAND.value),
+                rightJsonFeatureLocation.getInt(FeatureStringEnum.FMIN.value),
+                rightJsonFeatureLocation.getInt(FeatureStringEnum.FMAX.value),
+                rightJsonFeatureLocation.getInt(FeatureStringEnum.STRAND.value),
+                compareStrands)
+        return overlaps
+    }
+
+    boolean overlapsValues(
+      int leftFmin, int leftFmax, int leftStrand,
+      int rightFmin, int rightFmax, int rightStrand,
+            boolean compareStrands = true
+    ){
+        boolean strandsOverlap = compareStrands ? leftStrand == rightStrand : true;
+        if (strandsOverlap &&
+                (leftFmin <= rightFmin && leftFmax > rightFmin ||
+                        leftFmin >= rightFmin && leftFmin < rightFmax)) {
+            return true;
+        }
+        return false;
+
+    }
+
     boolean overlaps(FeatureLocation leftFeatureLocation, FeatureLocation rightFeatureLocation, boolean compareStrands = true) {
         if (leftFeatureLocation.sequence != rightFeatureLocation.sequence) {
             return false;
         }
-        int thisFmin = leftFeatureLocation.getFmin();
-        int thisFmax = leftFeatureLocation.getFmax();
-        int thisStrand = leftFeatureLocation.getStrand();
-        int otherFmin = rightFeatureLocation.getFmin();
-        int otherFmax = rightFeatureLocation.getFmax();
-        int otherStrand = rightFeatureLocation.getStrand();
-        boolean strandsOverlap = compareStrands ? thisStrand == otherStrand : true;
-        if (strandsOverlap &&
-                (thisFmin <= otherFmin && thisFmax > otherFmin ||
-                        thisFmin >= otherFmin && thisFmin < otherFmax)) {
-            return true;
-        }
-        return false;
+        return overlapsValues(
+                leftFeatureLocation.fmin,leftFeatureLocation.fmax,leftFeatureLocation.strand,
+                rightFeatureLocation.fmin,rightFeatureLocation.fmax,rightFeatureLocation.strand,
+                compareStrands
+        )
     }
 
 }
