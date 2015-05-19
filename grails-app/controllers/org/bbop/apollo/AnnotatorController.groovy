@@ -162,6 +162,57 @@ class AnnotatorController {
         return jsonFeatureContainer;
     }
 
+    def findAnnotations(String sequenceName, String annotationName,String type, String user, String sort,Boolean asc,Integer start,Integer length,Long index ) {
+        JSONObject returnObject = createJSONFeatureContainer()
+        if (sequenceName && !Sequence.countByName(sequenceName)){
+            render new JSONObject()
+            return
+        }
+
+        if (sequenceName) {
+            returnObject.track = sequenceName
+        }
+
+        Sequence sequence
+        Organism organism
+        if (returnObject.has("track")) {
+            sequence = permissionService.checkPermissions(returnObject, PermissionEnum.READ)
+            organism = sequence.organism
+        } else {
+            organism = permissionService.checkPermissionsForOrganism(returnObject, PermissionEnum.READ)
+        }
+        // find all features for current organism
+
+        // TODO: should only be returning the top-level features
+        List<Feature> allFeatures
+        if(organism){
+            if (!sequence) {
+                try {
+                    allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes) and upper(f.name) like :annotationName ",
+                            [organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%"])
+                } catch (e) {
+                    allFeatures = new ArrayList<>()
+                    log.error(e)
+                }
+            } else {
+                allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr join f.featureLocations fl join fl.sequence s join s.organism o where s.name = :sequenceName and f.childFeatureRelationships is empty  and o = :organism  and f.class in (:viewableTypes) and upper(f.name) like :annotationName ",
+                        [sequenceName: sequenceName, organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%"])
+            }
+
+            for (Feature feature in allFeatures) {
+                returnObject.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature, false));
+            }
+        }
+
+        returnObject.put(FeatureStringEnum.REQUEST_INDEX.getValue(), index + 1)
+
+        // TODO: do checks here
+        render returnObject
+
+    }
+
+
+
     def findAnnotationsForSequence(String sequenceName, String request) {
         JSONObject returnObject = createJSONFeatureContainer()
         if (sequenceName && !Sequence.countByName(sequenceName)) return

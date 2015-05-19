@@ -31,13 +31,14 @@ import com.google.gwt.uibinder.client.UiHandler;
 import com.google.gwt.user.cellview.client.*;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.*;
-import com.google.gwt.view.client.CellPreviewEvent;
-import com.google.gwt.view.client.ListDataProvider;
+import com.google.gwt.view.client.*;
 import org.bbop.apollo.gwt.client.dto.AnnotationInfo;
+import org.bbop.apollo.gwt.client.dto.AnnotationInfoConverter;
 import org.bbop.apollo.gwt.client.dto.UserInfo;
 import org.bbop.apollo.gwt.client.dto.UserInfoConverter;
 import org.bbop.apollo.gwt.client.event.*;
 import org.bbop.apollo.gwt.client.resources.TableResources;
+import org.bbop.apollo.gwt.client.rest.AnnotationRestService;
 import org.bbop.apollo.gwt.client.rest.UserRestService;
 import org.bbop.apollo.gwt.shared.FeatureStringEnum;
 import org.bbop.apollo.gwt.shared.PermissionEnum;
@@ -62,7 +63,8 @@ public class AnnotatorPanel extends Composite {
     private TextColumn<AnnotationInfo> typeColumn;
     private TextColumn<AnnotationInfo> sequenceColumn;
     private Column<AnnotationInfo, Number> lengthColumn;
-    long requestIndex = 0;
+    private Map<Integer, AnnotationInfo> annotationInfoMap = new HashMap<>();
+    private long requestIndex = 0;
 
     @UiField
     TextBox nameSearchBox;
@@ -106,9 +108,10 @@ public class AnnotatorPanel extends Composite {
 
     private MultiWordSuggestOracle sequenceOracle = new ReferenceSequenceOracle();
 
-    private static ListDataProvider<AnnotationInfo> dataProvider = new ListDataProvider<>();
-    private static List<AnnotationInfo> annotationInfoList = new ArrayList<>();
-    private static List<AnnotationInfo> filteredAnnotationList = dataProvider.getList();
+    //    private static ListDataProvider<AnnotationInfo> dataProvider = new ListDataProvider<>();
+    private AsyncDataProvider<AnnotationInfo> dataProvider;
+    //    private static List<AnnotationInfo> annotationInfoList = new ArrayList<>();
+//    private static List<AnnotationInfo> filteredAnnotationList = dataProvider.getList();
     private final Set<String> showingTranscripts = new HashSet<String>();
 
 
@@ -120,33 +123,12 @@ public class AnnotatorPanel extends Composite {
         dataGrid.setTableBuilder(new CustomTableBuilder());
         dataGrid.setLoadingIndicator(new Label("Loading"));
         dataGrid.setEmptyTableWidget(new Label("No results"));
-        initializeTable();
-
-
-        dataProvider.addDataDisplay(dataGrid);
-        pager.setDisplay(dataGrid);
-
-        dataGrid.addCellPreviewHandler(new CellPreviewEvent.Handler<AnnotationInfo>() {
-            @Override
-            public void onCellPreview(CellPreviewEvent<AnnotationInfo> event) {
-                AnnotationInfo annotationInfo = event.getValue();
-                if (event.getNativeEvent().getType().equals(BrowserEvents.CLICK)) {
-                    if (event.getContext().getSubIndex() == 0) {
-                        // subIndex from dataGrid will be 0 only when top-level cell values are clicked
-                        // ie. gene, pseudogene
-                        GWT.log("Safe to call updateAnnotationInfo");
-                        updateAnnotationInfo(annotationInfo);
-                    }
-                }
-            }
-        });
-
 
         exportStaticMethod(this);
 
-
         initWidget(ourUiBinder.createAndBindUi(this));
 
+        initializeTable();
 
         initializeTypes();
         initializeUsers();
@@ -336,37 +318,6 @@ public class AnnotatorPanel extends Composite {
         Annotator.eventBus.fireEvent(annotationInfoChangeEvent);
     }
 
-//    @UiHandler("stopCodonButton")
-//    // switch between states
-//    public void handleStopCodonStuff(ClickEvent clickEvent) {
-//        if (stopCodonButton.getIcon().equals(IconType.BAN)) {
-//            stopCodonButton.setIcon(IconType.WARNING);
-//            stopCodonButton.setType(ButtonType.WARNING);
-//        } else if (stopCodonButton.getIcon().equals(IconType.WARNING)) {
-//            stopCodonButton.setIcon(IconType.FILTER);
-//            stopCodonButton.setType(ButtonType.PRIMARY);
-//        } else {
-//            stopCodonButton.setIcon(IconType.BAN);
-//            stopCodonButton.setType(ButtonType.DEFAULT);
-//        }
-//        filterList();
-//    }
-//
-//    @UiHandler("cdsButton")
-//    // switch between states
-//    public void handleCdsStuff(ClickEvent clickEvent) {
-//        if (cdsButton.getIcon().equals(IconType.BAN)) {
-//            cdsButton.setIcon(IconType.WARNING);
-//            cdsButton.setType(ButtonType.WARNING);
-//        } else if (cdsButton.getIcon().equals(IconType.WARNING)) {
-//            cdsButton.setIcon(IconType.FILTER);
-//            cdsButton.setType(ButtonType.PRIMARY);
-//        } else {
-//            cdsButton.setIcon(IconType.BAN);
-//            cdsButton.setType(ButtonType.DEFAULT);
-//        }
-//        filterList();
-//    }
 
     private void initializeTable() {
         // View friends.
@@ -455,41 +406,113 @@ public class AnnotatorPanel extends Composite {
         dataGrid.setColumnWidth(3, "15%");
 
 
-        ColumnSortEvent.ListHandler<AnnotationInfo> sortHandler = new ColumnSortEvent.ListHandler<AnnotationInfo>(filteredAnnotationList);
-        dataGrid.addColumnSortHandler(sortHandler);
+//        ColumnSortEvent.ListHandler<AnnotationInfo> sortHandler = new ColumnSortEvent.ListHandler<AnnotationInfo>(filteredAnnotationList);
+//        dataGrid.addColumnSortHandler(sortHandler);
+//
+//        // Specify a custom table.
+////        dataGrid.setTableBuilder(new AnnotationInfoTableBuilder(dataGrid,sortHandler,showingTranscripts));
+//
+//        sortHandler.setComparator(nameColumn, new Comparator<AnnotationInfo>() {
+//            @Override
+//            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
+//                return o1.getName().compareToIgnoreCase(o2.getName());
+//            }
+//        });
+//
+//        sortHandler.setComparator(sequenceColumn, new Comparator<AnnotationInfo>() {
+//            @Override
+//            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
+//                return o1.getSequence().compareToIgnoreCase(o2.getSequence());
+//            }
+//        });
+//
+//
+//        sortHandler.setComparator(typeColumn, new Comparator<AnnotationInfo>() {
+//            @Override
+//            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
+//                return o1.getType().compareToIgnoreCase(o2.getType());
+//            }
+//        });
+//
+//        sortHandler.setComparator(lengthColumn, new Comparator<AnnotationInfo>() {
+//            @Override
+//            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
+//                return o1.getLength() - o2.getLength();
+//            }
+//        });
 
-        // Specify a custom table.
-//        dataGrid.setTableBuilder(new AnnotationInfoTableBuilder(dataGrid,sortHandler,showingTranscripts));
-
-        sortHandler.setComparator(nameColumn, new Comparator<AnnotationInfo>() {
+        dataProvider = new AsyncDataProvider<AnnotationInfo>() {
             @Override
-            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
-                return o1.getName().compareToIgnoreCase(o2.getName());
+            protected void onRangeChanged(HasData<AnnotationInfo> display) {
+                final Range range = display.getVisibleRange();
+                final ColumnSortList sortList = dataGrid.getColumnSortList();
+                final int start = range.getStart();
+                final int length = range.getLength();
+
+
+                RequestCallback requestCallback = new RequestCallback() {
+                    @Override
+                    public void onResponseReceived(Request request, Response response) {
+                        JSONValue returnValue = JSONParser.parseStrict(response.getText());
+                        long localRequestValue = (long) returnValue.isObject().get(FeatureStringEnum.REQUEST_INDEX.getValue()).isNumber().doubleValue();
+                        // returns
+                        if (localRequestValue <= requestIndex) {
+                            return;
+                        } else {
+                            requestIndex = localRequestValue;
+                        }
+
+                        JSONArray jsonArray = returnValue.isObject().get(FeatureStringEnum.FEATURES.getValue()).isArray();
+                        List<AnnotationInfo> annotationInfoList = AnnotationInfoConverter.convertFromJsonArray(jsonArray);
+                        annotationInfoMap.clear();
+                        for (int i = 0; i < annotationInfoList.size(); i++) {
+                            annotationInfoMap.put(i, annotationInfoList.get(i));
+                        }
+                        dataGrid.setRowData(start, annotationInfoList);
+                    }
+
+                    @Override
+                    public void onError(Request request, Throwable exception) {
+                        Window.alert("error getting annotation info: " + exception);
+                    }
+                };
+
+
+                ColumnSortList.ColumnSortInfo nameSortInfo = sortList.get(0);
+//                if (nameSortInfo.getColumn().isSortable()) {
+                Column<AnnotationInfo, ?> sortColumn = (Column<AnnotationInfo, ?>) sortList.get(0).getColumn();
+                Integer columnIndex = dataGrid.getColumnIndex(sortColumn);
+                String searchColumnString = columnIndex == 0 ? "name" : "length";
+                Boolean sortNameAscending = nameSortInfo.isAscending();
+
+
+                AnnotationRestService.getAnnotations(requestCallback, sequenceList.getText(), nameSearchBox.getText(), typeList.getSelectedValue(), userField.getSelectedValue(), start, length, searchColumnString, sortNameAscending);
+//                }
+            }
+        };
+
+        ColumnSortEvent.AsyncHandler columnSortHandler = new ColumnSortEvent.AsyncHandler(dataGrid);
+        dataGrid.addColumnSortHandler(columnSortHandler);
+        dataGrid.getColumnSortList().push(nameColumn);
+        dataGrid.getColumnSortList().push(lengthColumn);
+
+        dataProvider.addDataDisplay(dataGrid);
+        pager.setDisplay(dataGrid);
+
+        dataGrid.addCellPreviewHandler(new CellPreviewEvent.Handler<AnnotationInfo>() {
+            @Override
+            public void onCellPreview(CellPreviewEvent<AnnotationInfo> event) {
+                AnnotationInfo annotationInfo = event.getValue();
+                if (event.getNativeEvent().getType().equals(BrowserEvents.CLICK)) {
+                    if (event.getContext().getSubIndex() == 0) {
+                        // subIndex from dataGrid will be 0 only when top-level cell values are clicked
+                        // ie. gene, pseudogene
+                        GWT.log("Safe to call updateAnnotationInfo");
+                        updateAnnotationInfo(annotationInfo);
+                    }
+                }
             }
         });
-
-        sortHandler.setComparator(sequenceColumn, new Comparator<AnnotationInfo>() {
-            @Override
-            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
-                return o1.getSequence().compareToIgnoreCase(o2.getSequence());
-            }
-        });
-
-
-        sortHandler.setComparator(typeColumn, new Comparator<AnnotationInfo>() {
-            @Override
-            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
-                return o1.getType().compareToIgnoreCase(o2.getType());
-            }
-        });
-
-        sortHandler.setComparator(lengthColumn, new Comparator<AnnotationInfo>() {
-            @Override
-            public int compare(AnnotationInfo o1, AnnotationInfo o2) {
-                return o1.getLength() - o2.getLength();
-            }
-        });
-
 
     }
 
@@ -497,67 +520,25 @@ public class AnnotatorPanel extends Composite {
         return internalData.get("type").isObject().get("name").isString().stringValue();
     }
 
-    public void loadOrganismAndSequence(String sequenceName) {
-        String url = Annotator.getRootUrl() + "annotator/findAnnotationsForSequence/?sequenceName=" + sequenceName + "&request=" + requestIndex;
-        RequestBuilder builder = new RequestBuilder(RequestBuilder.GET, URL.encode(url));
-        builder.setHeader("Content-type", "application/x-www-form-urlencoded");
-        RequestCallback requestCallback = new RequestCallback() {
-            @Override
-            public void onResponseReceived(Request request, Response response) {
-                JSONValue returnValue = JSONParser.parseStrict(response.getText());
-                long localRequestValue = (long) returnValue.isObject().get(FeatureStringEnum.REQUEST_INDEX.getValue()).isNumber().doubleValue();
-                // returns
-                if (localRequestValue <= requestIndex) {
-                    return;
-                } else {
-                    requestIndex = localRequestValue;
-                }
-
-                JSONArray array = returnValue.isObject().get("features").isArray();
-                annotationInfoList.clear();
-
-                for (int i = 0; i < array.size(); i++) {
-                    JSONObject object = array.get(i).isObject();
-                    AnnotationInfo annotationInfo = generateAnnotationInfo(object);
-                    annotationInfoList.add(annotationInfo);
-                }
-                filterList();
-                dataGrid.redraw();
-            }
-
-            @Override
-            public void onError(Request request, Throwable exception) {
-                Window.alert("Error loading organisms");
-            }
-        };
-        try {
-            builder.setCallback(requestCallback);
-            builder.send();
-        } catch (RequestException e) {
-            // Couldn't connect to server
-            Window.alert(e.getMessage());
-        }
-
-    }
-
 
     public void reload() {
-        loadOrganismAndSequence(sequenceList.getText());
+        refreshQuery();
+//        loadOrganismAndSequence(sequenceList.getText());
     }
 
-    private void filterList() {
-        filteredAnnotationList.clear();
-        for (int i = 0; i < annotationInfoList.size(); i++) {
-            AnnotationInfo annotationInfo = annotationInfoList.get(i);
-            if (searchMatches(annotationInfo)) {
-                filteredAnnotationList.add(annotationInfo);
-            } else {
-                if (searchMatches(annotationInfo.getAnnotationInfoSet())) {
-                    filteredAnnotationList.add(annotationInfo);
-                }
-            }
-        }
-    }
+//    private void filterList() {
+//        filteredAnnotationList.clear();
+//        for (int i = 0; i < annotationInfoList.size(); i++) {
+//            AnnotationInfo annotationInfo = annotationInfoList.get(i);
+//            if (searchMatches(annotationInfo)) {
+//                filteredAnnotationList.add(annotationInfo);
+//            } else {
+//                if (searchMatches(annotationInfo.getAnnotationInfoSet())) {
+//                    filteredAnnotationList.add(annotationInfo);
+//                }
+//            }
+//        }
+//    }
 
     private boolean searchMatches(Set<AnnotationInfo> annotationInfoSet) {
         for (AnnotationInfo annotationInfo : annotationInfoSet) {
@@ -626,14 +607,18 @@ public class AnnotatorPanel extends Composite {
         return annotationInfo;
     }
 
+    public void refreshQuery() {
+        dataGrid.setVisibleRangeAndClearData(dataGrid.getVisibleRange(), true);
+    }
+
     @UiHandler(value = {"typeList", "userField"})
     public void searchType(ChangeEvent changeEvent) {
-        filterList();
+        refreshQuery();
     }
 
     @UiHandler("nameSearchBox")
     public void searchName(KeyUpEvent keyUpEvent) {
-        filterList();
+        refreshQuery();
     }
 
 
@@ -651,9 +636,9 @@ public class AnnotatorPanel extends Composite {
 
 
     // TODO: need to cache these or retrieve from the backend
-    public static void displayTranscript(int geneIndex, String uniqueName) {
+    public void displayTranscript(int geneIndex, String uniqueName) {
         // 1 - get the correct gene
-        AnnotationInfo annotationInfo = filteredAnnotationList.get(geneIndex);
+        AnnotationInfo annotationInfo = annotationInfoMap.get(geneIndex);
         AnnotationInfoChangeEvent annotationInfoChangeEvent = new AnnotationInfoChangeEvent(annotationInfo, AnnotationInfoChangeEvent.Action.SET_FOCUS);
 
         for (AnnotationInfo childAnnotation : annotationInfo.getAnnotationInfoSet()) {
@@ -667,7 +652,7 @@ public class AnnotatorPanel extends Composite {
     }
 
     public static native void exportStaticMethod(AnnotatorPanel annotatorPanel) /*-{
-        $wnd.displayTranscript = $entry(@org.bbop.apollo.gwt.client.AnnotatorPanel::displayTranscript(ILjava/lang/String;));
+        $wnd.displayTranscript = $entry(this.@org.bbop.apollo.gwt.client.AnnotatorPanel::displayTranscript(ILjava/lang/String;));
     }-*/;
 
     private class CustomTableBuilder extends AbstractCellTableBuilder<AnnotationInfo> {
