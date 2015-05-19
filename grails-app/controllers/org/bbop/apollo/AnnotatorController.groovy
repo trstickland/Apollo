@@ -186,22 +186,31 @@ class AnnotatorController {
         // TODO: should only be returning the top-level features
         List<Feature> allFeatures
         if(organism){
+            long startTime = System.currentTimeMillis()
             if (!sequence) {
                 try {
-                    allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr  join f.featureLocations fl join fl.sequence s join s.organism o  where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes) and upper(f.name) like :annotationName ",
-                            [organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%"])
+                    String typeString = type ? "%"+type.toUpperCase().replaceAll("_","")+"%" : "%%" ;
+                    println "search for ${typeString}"
+                    allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr join pfr.childFeature tran join f.featureLocations fl join fl.sequence s join s.organism o  join f.owners owner where f.childFeatureRelationships is empty and o = :organism and f.class in (:viewableTypes) and upper(f.name) like :annotationName and (upper(f.class) like :type or upper(tran.class) like :type ) and upper(owner.username) like :user  ",
+                            [organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%",type:typeString,user:"%"+user.toUpperCase()+"%"])
                 } catch (e) {
                     allFeatures = new ArrayList<>()
                     log.error(e)
                 }
             } else {
-                allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr join f.featureLocations fl join fl.sequence s join s.organism o where s.name = :sequenceName and f.childFeatureRelationships is empty  and o = :organism  and f.class in (:viewableTypes) and upper(f.name) like :annotationName ",
-                        [sequenceName: sequenceName, organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%"])
+                allFeatures = Feature.executeQuery("select distinct f from Feature f left join f.parentFeatureRelationships pfr join f.featureLocations fl join fl.sequence s join s.organism o where s.name = :sequenceName and f.childFeatureRelationships is empty  and o = :organism  and f.class in (:viewableTypes) and upper(f.name) like :annotationName  and upper(f.class) like :type  and upper(f.owner.username) like :user ",
+                        [sequenceName: sequenceName, organism: organism, viewableTypes: requestHandlingService.viewableAnnotationList,max:length,offset:start,annotationName:"%"+annotationName.toUpperCase()+"%",type:"%"+type.toUpperCase()+"%",user:"%"+user.toUpperCase()+"%"])
             }
+            long endTime = System.currentTimeMillis()
+
+            System.out.println("time A: "+((endTime-startTime )/1000f))
+            startTime = System.currentTimeMillis()
 
             for (Feature feature in allFeatures) {
                 returnObject.getJSONArray(FeatureStringEnum.FEATURES.value).put(featureService.convertFeatureToJSON(feature, false));
             }
+            endTime = System.currentTimeMillis()
+            System.out.println("time B: "+((endTime-startTime )/1000f))
         }
 
         returnObject.put(FeatureStringEnum.REQUEST_INDEX.getValue(), index + 1)
