@@ -17,9 +17,6 @@ class FeatureSpec extends Specification {
                 ,start: 1
                 ,end: 1013
                 ,length: 1013
-                ,seqChunkSize: 50
-                ,seqChunkPrefix: "asdf"
-                ,sequenceDirectory: "notapath"
         ).save(failOnError: true)
 
 

@@ -638,18 +638,6 @@ public class AnnotatorPanel extends Composite {
     }
 
 
-//    @UiHandler("sequenceList")
-//    public void changeRefSequence(SelectionEvent changeEvent) {
-////        selectedSequenceName = sequenceList.getText();
-//        reload();
-//    }
-
-//    @UiHandler("sequenceList")
-//    public void changeRefSequence(KeyUpEvent changeEvent) {
-////        selectedSequenceName = sequenceList.getText();
-//        reload();
-//    }
-
 
     // TODO: need to cache these or retrieve from the backend
     public static void displayTranscript(int geneIndex, String uniqueName) {
@@ -770,7 +758,5 @@ public class AnnotatorPanel extends Composite {
             row.endTR();
 
         }
-
-
     }
 }

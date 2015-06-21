@@ -20,14 +20,9 @@ class RequestHandlingServiceIntegrationSpec extends IntegrationSpec {
         ).save(flush: true)
         Sequence sequence = new Sequence(
                 length: 1405242
-                , refSeqFile: "adsf"
-                , seqChunkPrefix: "Group1.10-"
-                , seqChunkSize: 20000
                 , start: 0
                 , organism: organism
                 , end: 1405242
-                // from (honeybee f78/c6f/0c
-                , sequenceDirectory: "test/integration/resources/sequences/honeybee-Group1.10/"
                 , name: "Group1.10"
         ).save()
 
@@ -40,7 +35,6 @@ class RequestHandlingServiceIntegrationSpec extends IntegrationSpec {
 //            FeatureLocation.executeUpdate("delete from FeatureLocation ")
 //            FeatureRelationship.executeUpdate("delete from FeatureRelationship ")
 //            Feature.executeUpdate("delete from Feature ")
-//            SequenceChunk.executeUpdate("delete from SequenceChunk ")
 //            Sequence.first().sequenceChunks?.clear()
 //            Sequence.first().save(flush: true )
 ////            Sequence.executeUpdate("delete from Sequence ")

@@ -694,15 +694,25 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
     def getSequence() {
         log.debug "getSequence ${params.data}"
-        JSONObject inputObject = (JSONObject) JSON.parse(params.data)
-        if (!permissionService.hasPermissions(inputObject, PermissionEnum.EXPORT)) {
-            render status: HttpStatus.UNAUTHORIZED
-            return
+        try {
+            JSONObject inputObject = (JSONObject) JSON.parse(params.data)
+            if (!permissionService.hasPermissions(inputObject, PermissionEnum.EXPORT)) {
+                render status: HttpStatus.UNAUTHORIZED
+            }
+            else {
+                JSONObject featureContainer = createJSONFeatureContainer()
+                JSONObject sequenceObject = sequenceService.getSequenceForFeatures(inputObject)
+                featureContainer.getJSONArray("features").put(sequenceObject)
+                render featureContainer
+            }
         }
-        JSONObject featureContainer = createJSONFeatureContainer()
-        JSONObject sequenceObject = sequenceService.getSequenceForFeatures(inputObject)
-        featureContainer.getJSONArray("features").put(sequenceObject)
-        render featureContainer
+        catch(Exception exp) {
+            JSONObject e=new JSONObject()
+            e.put("error", exp.message)
+            log.error exp.message
+            render e as JSON
+        }
+
     }
 
     def getSequenceSearchTools() {

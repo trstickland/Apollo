@@ -21,14 +21,9 @@ class SequenceServiceIntegrationSpec extends IntegrationSpec {
 
         Sequence sequence = new Sequence(
                 length: 1405242
-                ,refSeqFile: "adsf"
-                ,seqChunkPrefix: "Group1.10-"
-                ,seqChunkSize: 20000
                 ,start: 0
                 ,end: 1405242
                 ,organism: organism
-                // from (honeybee f78/c6f/0c
-                ,sequenceDirectory: "test/integration/resources/sequences/honeybee-Group1.10/"
                 ,name: "Group1.10"
         ).save(flush: true)
     }

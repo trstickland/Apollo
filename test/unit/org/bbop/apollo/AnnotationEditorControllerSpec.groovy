@@ -22,22 +22,10 @@ class AnnotationEditorControllerSpec extends Specification {
 
     def setup() {
         controller.featureService = Mock(FeatureService)
-//        Sequence sequence = new Sequence(
-//                name: "chromosome7"
-////                , sequenceType: "scaffold"
-////                , sequenceCV: "contig"
-//        ).save(failOnError: true)
-
         Sequence sequence = new Sequence(
-//                organism: organism
                 length: 3
-                ,refSeqFile: "adsf"
-                ,seqChunkPrefix: "asdf"
-                ,seqChunkSize: 3
                 ,start: 5
                 ,end: 8
-//                ,dataDirectory: "adsfads"
-                ,sequenceDirectory: "asdfadsf"
                 ,name: "chromosome7"
         ).save(failOnError: true)
 

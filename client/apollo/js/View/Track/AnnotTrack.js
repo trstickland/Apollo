@@ -3848,7 +3848,7 @@ define([
                 }, genomicWithFlankButtonDiv);
 
                 var fetchSequence = function (type) {
-                    var features = '"features": [';
+                    var features = [];
                     for (var i = 0; i < records.length; ++i) {
                         var record = records[i];
                         var annot = record.feature;
@@ -3859,31 +3859,31 @@ define([
                         if (seltrack === track) {
                             var trackdiv = track.div;
                             var trackName = track.getUniqueTrackName();
-
-                            if (i > 0) {
-                                features += ',';
-                            }
-                            features += ' { "uniquename": "' + uniqueName + '" } ';
+                            features.push({ "uniquename": uniqueName });
                         }
                     }
-                    features += ']';
                     var operation = "get_sequence";
                     var trackName = track.getUniqueTrackName();
-                    var postData = '{ "track": "' + trackName + '", ' + features + ', "operation": "' + operation + '"';
+                    var postData = { "track": trackName, "features": features, "operation": operation };
                     var flank = 0;
                     if (type == "genomic_with_flank") {
                         flank = dojo.attr(genomicWithFlankField, "value");
-                        postData += ', "flank": ' + flank;
+                        postData.flank = flank;
                         type = "genomic";
                     }
-                    postData += ', "type": "' + type + '" }';
+                    postData.type = type;
                     dojo.xhrPost({
-                        postData: postData,
+                        postData: JSON.stringify(postData),
                         url: context_path + "/AnnotationEditorService",
                         handleAs: "json",
                         timeout: 5000 * 1000, // Time in milliseconds
                         load: function (response, ioArgs) {
                             var textAreaContent = "";
+                            if(response.error) {
+                                dojo.attr(textArea, "innerHTML", response.error);
+                                return;
+                            }
+
                             for (var i = 0; i < response.features.length; ++i) {
                                 var feature = response.features[i];
                                 var cvterm = feature.type;

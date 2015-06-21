@@ -12,7 +12,6 @@ class Sequence {
         start nullable: false
         end nullable: false
         organism nullable: true
-        refSeqFile nullable: true
         translationTableLocation nullable: true
         spliceDonorSite nullable: true
         spliceAcceptor nullable: true
@@ -22,14 +21,12 @@ class Sequence {
     // feature locations instead of features
     static hasMany = [
             featureLocations: FeatureLocation
-            , sequenceChunks: SequenceChunk
     ]
 
     static mapping = {
         end column: "sequence_end"
         start column: "sequence_start"
         featureLocations cascade: 'all-delete-orphan'
-        sequenceChunks cascade: 'all-delete-orphan'
     }
 
     static belongsTo = [Organism]
@@ -37,22 +34,10 @@ class Sequence {
 
     String name
     Organism organism
-
-    // TODO: remove these as they should be redundant with organism
-    String refSeqFile
-
-    // TODO: remove these as they should be redundant with organism
     String translationTableLocation
     String spliceDonorSite = "GT"
     String spliceAcceptor = "AG"
-
-    // SourceFeature properties
     Integer length
-    Integer seqChunkSize
-    String seqChunkPrefix
     Integer start
     Integer end
-    // TODO: remove these as they should be redundant with organism
-    String sequenceDirectory
-
 }

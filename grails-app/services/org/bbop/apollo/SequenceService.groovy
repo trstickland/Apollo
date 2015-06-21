@@ -10,7 +10,8 @@ import org.bbop.apollo.sequence.Strand
 import org.codehaus.groovy.grails.web.json.JSONArray
 import org.codehaus.groovy.grails.web.json.JSONException
 import org.codehaus.groovy.grails.web.json.JSONObject
-
+import htsjdk.samtools.reference.ReferenceSequence
+import htsjdk.samtools.reference.IndexedFastaSequenceFile
 import java.util.zip.CRC32
 
 @Transactional
@@ -56,47 +57,19 @@ class SequenceService {
     }
 
     String getResiduesFromSequence(Sequence sequence, int fmin, int fmax) {
+        log.debug "${sequence}"
         StringBuilder sequenceString = new StringBuilder()
 
-        int startChunkNumber = fmin / sequence.seqChunkSize;
-        int endChunkNumber = (fmax - 1 ) / sequence.seqChunkSize;
-
-        for(int i = startChunkNumber ; i<= endChunkNumber ; i++){
-            SequenceChunk sequenceChunk = getSequenceChunkForChunk(sequence,i)
-            sequenceString.append(sequenceChunk.residue)
-        }
-
-
-        int startPosition = fmin - (startChunkNumber * sequence.seqChunkSize);
-
-        return sequenceString.substring(startPosition,startPosition + (fmax-fmin))
+        IndexedFastaSequenceFile file=IndexedFastaSequenceFile(new File(sequence.organism.refseqFile))
+        return file.getSubsequenceAt(sequence.name,start,end)
     }
 
-    SequenceChunk getSequenceChunkForChunk(Sequence sequence, int i) {
-        SequenceChunk sequenceChunk = SequenceChunk.findBySequenceAndChunkNumber(sequence,i)
-        if(!sequenceChunk){
-            String residue = loadResidueForSequence(sequence,i)
-            log.debug "RESIDUE load: ${residue?.size()}"
-            sequenceChunk = new SequenceChunk(
-                    sequence: sequence
-                    ,chunkNumber: i
-                    ,residue: residue
-            ).save(flush:true)
-        }
-        log.debug "RESIDUE loaded from DB: ${sequenceChunk.residue?.size()}"
-        return sequenceChunk
-    }
 
     private static String generatorSampleDNA(int size){
         return RandomStringUtils.random(size,['A','T','C','G'] as char[])
     }
     
 
-    String loadResidueForSequence(Sequence sequence, int chunkNumber) {
-        String filePath = sequence.sequenceDirectory + "/" + sequence.seqChunkPrefix + chunkNumber + ".txt"
-
-        return new File(filePath).getText().toUpperCase()
-    }
 
     private String[] splitStringByNumberOfCharacters(String str, int numOfChars) {
         int numTokens = str.length() / numOfChars;

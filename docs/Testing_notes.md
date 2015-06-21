@@ -28,7 +28,7 @@ This runs the tests in FeatureServiceSpec . . some of which is below.  Some impo
     
       when: "We have a valid json object"
       JSONObject jsonObject = new JSONObject()
-      Sequence sequence = new Sequence(name: "Chr3",seqChunkPrefix: "abc",seqChunkSize: 20,start:1,end:100,length:99,sequenceDirectory: "/tmp").save(failOnError: true)
+      Sequence sequence = new Sequence(name: "Chr3",seqChunkPrefix: "abc",seqChunkSize: 20,start:1,end:100,length:99).save(failOnError: true)
       jsonObject.put(FeatureStringEnum.FMIN.value,73)
       jsonObject.put(FeatureStringEnum.FMAX.value,113)
       jsonObject.put(FeatureStringEnum.STRAND.value, Strand.POSITIVE.value)
@@ -39,7 +39,7 @@ This runs the tests in FeatureServiceSpec . . some of which is below.  Some impo
       assert featureLocation.sequence.name == "Chr3"
       assert featureLocation.fmin == 73
       assert featureLocation.fmax == 113
-      assert featureLocation.strand ==Strand.POSITIVE.value
+      assert featureLocation.strand == Strand.POSITIVE.value
     } }
 ```
 

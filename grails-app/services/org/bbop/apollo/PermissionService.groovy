@@ -17,12 +17,11 @@ class PermissionService {
 
     def preferenceService
 
-    public static String TRACK_NAME_SPLITTER = "::"
 
     String getTracks(User user, Organism organism) {
         String trackList = ""
         for (UserPermission userPermission in UserPermission.findAllByUserAndOrganism(user, organism)) {
-            trackList += userPermission.trackNames // TODO: add properly
+            trackList += userPermission.trackNames
         }
         for (UserGroup userGroup in user.userGroups) {
             trackList += getTracks(userGroup, organism)
