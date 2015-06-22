@@ -40,6 +40,7 @@ class AnnotatorService {
                         valid          : organism.valid,
                         currentOrganism: defaultOrganismId != null ? organism.id == defaultOrganismId : false
                 ] as JSONObject
+                log.debug "adding organism ${jsonObject}"
                 organismArray.add(jsonObject)
             }
             appStateObject.put("organismList", organismArray)

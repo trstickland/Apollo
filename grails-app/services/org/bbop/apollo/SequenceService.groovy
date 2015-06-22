@@ -56,11 +56,9 @@ class SequenceService {
     }
 
     String getResiduesFromSequence(Sequence sequence, int fmin, int fmax) {
-        log.debug "${sequence}"
-        StringBuilder sequenceString = new StringBuilder()
-
-        IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(sequence.organism.refseqFile))
-        return file.getSubsequenceAt(sequence.name,start,end)
+        log.debug "${sequence} ${fmin} ${fmax} ${sequence.name}"
+        IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(sequence.organism.fasta))
+        return file.getSubsequenceAt(sequence.name,fmin,fmax)
     }
 
 
@@ -105,7 +103,24 @@ class SequenceService {
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(refSeqsFile));
         JSONArray refSeqs = convertJBrowseJSON(bufferedInputStream);
         log.debug "refseq length ${refSeqs.size()}"
+
+
         // delete all sequence for the organism
+        Sequence.deleteAll(Sequence.findAllByOrganism(organism))
+        for (int i = 0; i < refSeqs.length(); ++i) {
+            JSONObject refSeq = refSeqs.getJSONObject(i);
+            String name = refSeq.getString("name");
+            int length = refSeq.getInt("length");
+            int start = refSeq.getInt("start");
+            int end = refSeq.getInt("end");
+            Sequence sequence = new Sequence(
+                    organism: organism
+                    , length: length
+                    , start: start
+                    , end: end
+                    , name: name
+            ).save(failOnError: true)
+        }
 
 
         organism.valid = true

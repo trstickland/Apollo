@@ -4,6 +4,7 @@ import com.google.gwt.core.client.GWT;
 
 import com.google.gwt.json.client.*;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Created by ndunn on 3/31/15.
@@ -40,6 +41,9 @@ public class OrganismInfoConverter {
         }
         if (object.get("species") != null && object.get("species").isString() != null) {
             organismInfo.setSpecies(object.get("species").isString().stringValue());
+        }
+        if (object.get("blatdb") != null && object.get("blatdb").isString() != null) {
+            organismInfo.setBlatDb(object.get("blatdb").isString().stringValue());
         }
         organismInfo.setCurrent(object.get("currentOrganism")!=null && object.get("currentOrganism").isBoolean().booleanValue());
 
