@@ -10,7 +10,6 @@ import org.bbop.apollo.sequence.Strand
 import org.codehaus.groovy.grails.web.json.JSONArray
 import org.codehaus.groovy.grails.web.json.JSONException
 import org.codehaus.groovy.grails.web.json.JSONObject
-import htsjdk.samtools.reference.ReferenceSequence
 import htsjdk.samtools.reference.IndexedFastaSequenceFile
 import java.util.zip.CRC32
 
@@ -105,46 +104,9 @@ class SequenceService {
         log.info " file exists ${refSeqsFile.exists()}"
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(refSeqsFile));
         JSONArray refSeqs = convertJBrowseJSON(bufferedInputStream);
-        log.debug "freseq length ${refSeqs.size()}"
+        log.debug "refseq length ${refSeqs.size()}"
         // delete all sequence for the organism
-        Sequence.deleteAll(Sequence.findAllByOrganism(organism))
-        for (int i = 0; i < refSeqs.length(); ++i) {
-            JSONObject refSeq = refSeqs.getJSONObject(i);
-            int length = refSeq.getInt("length");
-            String name = refSeq.getString("name");
-            String seqDir;
-            String seqChunkPrefix = "";
-            if (refSeq.has("seqDir")) {
-                seqDir = refSeqsFile.getParent() + "/" + refSeq.getString("seqDir");
-            }
-            else {
-                CRC32 crc = new CRC32();
-                crc.update(name.getBytes());
-                String hex = String.format("%08x", crc.getValue());
-                String []dirs = splitStringByNumberOfCharacters(hex, 3);
-                seqDir = String.format("%s/%s/%s/%s", refSeqsFile.getParent(), dirs[0], dirs[1], dirs[2]);
-                seqChunkPrefix = name + "-";
-            }
-            int seqChunkSize = refSeq.getInt("seqChunkSize");
-            int start = refSeq.getInt("start");
-            int end = refSeq.getInt("end");
 
-
-
-            Sequence sequence = new Sequence(
-                    organism: organism
-                    ,length: length
-                    ,refSeqFile: organism.refseqFile
-                    ,seqChunkPrefix: seqChunkPrefix
-                    ,seqChunkSize: seqChunkSize
-                    ,start: start
-                    ,end: end
-                    ,sequenceDirectory: seqDir
-                    ,name: name
-            ).save(failOnError: true)
-
-
-        }
 
         organism.valid = true
         organism.save(flush: true,insert:false,failOnError: true)

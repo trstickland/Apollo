@@ -697,7 +697,10 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         try {
             JSONObject inputObject = (JSONObject) JSON.parse(params.data)
             if (!permissionService.hasPermissions(inputObject, PermissionEnum.EXPORT)) {
-                render status: HttpStatus.UNAUTHORIZED
+                JSONObject e=new JSONObject()
+                e.put("error", "Unauthorized")
+                log.error "Unauthorized"
+                render text: e as JSON, status: HttpStatus.UNAUTHORIZED
             }
             else {
                 JSONObject featureContainer = createJSONFeatureContainer()
