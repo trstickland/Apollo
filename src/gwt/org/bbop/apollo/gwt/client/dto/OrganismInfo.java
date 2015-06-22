@@ -22,6 +22,7 @@ public class OrganismInfo implements HasJSON{
     private String species ;
     private String directory ;
     private String blatdb ;
+    private String fasta ;
 
     private Integer numFeatures ;
     private Integer numSequences;
@@ -44,6 +45,14 @@ public class OrganismInfo implements HasJSON{
 
     public void setBlatDb(String blatdb) {
         this.blatdb = blatdb;
+    }
+
+    public String getFasta() {
+        return fasta;
+    }
+
+    public void setFasta(String fasta) {
+        this.fasta = fasta;
     }
 
     public String getGenus() {
@@ -92,14 +101,6 @@ public class OrganismInfo implements HasJSON{
 
     public void setNumSequences(Integer numSequences) {
         this.numSequences = numSequences;
-    }
-
-    public Integer getNumTracks() {
-        return numTracks;
-    }
-
-    public void setNumTracks(Integer numTracks) {
-        this.numTracks = numTracks;
     }
 
     public String getDirectory() {
@@ -152,6 +153,9 @@ public class OrganismInfo implements HasJSON{
         }
         if(valid!=null){
             payload.put("valid",JSONBoolean.getInstance(valid));
+        }
+        if(fasta!=null){
+            payload.put("fasta",new JSONString(fasta));
         }
 
         return payload;

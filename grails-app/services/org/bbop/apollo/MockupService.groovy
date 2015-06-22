@@ -38,7 +38,7 @@ class MockupService {
 
             results.each { Organism organism ->
                 log.debug "processing organism ${organism}"
-                String fileName = organism.getRefseqFile()
+                String fileName = organism.refseqFile
                 File testFile = new File(fileName)
                 if (testFile.exists() && testFile.isFile()) {
                     log.debug "trying to load refseq file: ${testFile.absolutePath}"

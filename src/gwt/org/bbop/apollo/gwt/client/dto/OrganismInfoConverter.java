@@ -3,9 +3,6 @@ package org.bbop.apollo.gwt.client.dto;
 import com.google.gwt.core.client.GWT;
 
 import com.google.gwt.json.client.*;
-import com.google.gwt.user.client.Window;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,14 +35,13 @@ public class OrganismInfoConverter {
         if (object.get("genus") != null && object.get("genus").isString() != null) {
             organismInfo.setGenus(object.get("genus").isString().stringValue());
         }
+        if (object.get("fasta") != null && object.get("fasta").isString() != null) {
+            organismInfo.setFasta(object.get("fasta").isString().stringValue());
+        }
         if (object.get("species") != null && object.get("species").isString() != null) {
             organismInfo.setSpecies(object.get("species").isString().stringValue());
         }
-        if (object.get("blatdb") != null && object.get("blatdb").isString() != null) {
-            organismInfo.setBlatDb(object.get("blatdb").isString().stringValue());
-        }
         organismInfo.setCurrent(object.get("currentOrganism")!=null && object.get("currentOrganism").isBoolean().booleanValue());
-        organismInfo.setNumTracks(0);
 
         return organismInfo;
     }
@@ -62,7 +58,6 @@ public class OrganismInfoConverter {
     }
 
     /**
-     * // tODO: flesh out the rest
      * @param organismInfo
      * @return
      */
@@ -87,6 +82,9 @@ public class OrganismInfoConverter {
         }
         if (organismInfo.getBlatDb() != null) {
             object.put("blatdb", new JSONString(organismInfo.getBlatDb()));
+        }
+        if(organismInfo.getFasta() != null) {
+            object.put("fasta", new JSONString(organismInfo.getFasta()));
         }
         return object;
     }

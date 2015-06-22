@@ -59,7 +59,7 @@ class SequenceService {
         log.debug "${sequence}"
         StringBuilder sequenceString = new StringBuilder()
 
-        IndexedFastaSequenceFile file=IndexedFastaSequenceFile(new File(sequence.organism.refseqFile))
+        IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(sequence.organism.refseqFile))
         return file.getSubsequenceAt(sequence.name,start,end)
     }
 

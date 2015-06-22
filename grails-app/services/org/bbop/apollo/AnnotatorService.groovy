@@ -31,6 +31,7 @@ class AnnotatorService {
                         id             : organism.id as Long,
                         commonName     : organism.commonName,
                         blatdb         : organism.blatdb,
+                        fasta          : organism.fasta,
                         directory      : organism.directory,
                         annotationCount: annotationCount,
                         sequences      : sequenceCount,

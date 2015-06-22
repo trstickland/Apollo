@@ -65,6 +65,7 @@ class OrganismController {
                         commonName: organismJson.commonName
                         , directory: organismJson.directory
                         , blatdb: organismJson.blatdb
+                        , fasta: organismJson.fasta
                         , species: organismJson.species
                         , genus: organismJson.genus
                 )
@@ -167,6 +168,7 @@ class OrganismController {
             if (organism) {
                 organism.commonName = organismJson.name
                 organism.blatdb = organismJson.blatdb
+                organism.fasta = organismJson.fasta
                 organism.species = organismJson.species
                 organism.genus = organismJson.genus
                 organism.directory = organismJson.directory
@@ -208,6 +210,7 @@ class OrganismController {
                     id             : organism.id,
                     commonName     : organism.commonName,
                     blatdb         : organism.blatdb,
+                    fasta          : organism.fasta,
                     directory      : organism.directory,
                     annotationCount: annotationCount,
                     sequences      : sequenceCount,

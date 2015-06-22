@@ -12,6 +12,7 @@ class Organism {
         valid nullable: true
         blatdb nullable: true
         commonName nullable: false
+        fasta nullable: false
     }
 
     //Integer organismId;
@@ -20,6 +21,7 @@ class Organism {
     String species;
     String commonName;
     String comment;
+    String fasta;
     Boolean valid;
     String blatdb;
     String directory

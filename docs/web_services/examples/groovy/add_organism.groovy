@@ -16,7 +16,8 @@ cli.setStopAtNonOption(true)
 cli.url('URL to WebApollo instance', required: true, args: 1)
 cli.name('organism common name', required: true, args: 1)
 cli.directory('jbrowse data directory', required: true, args: 1)
-cli.blatdb('blatdb directory', args: 1)
+cli.fastaFile('fasta file', required: true, args: 1)
+cli.blatdb('blat database (.2bit file)', args: 1)
 cli.genus('genus', args: 1)
 cli.species('species', args: 1)
 cli.username('username', required: false, args: 1)
@@ -50,6 +51,7 @@ URL url = new URL(options.url)
 def argumentsArray = [
         commonName: options.name,
         directory : options.directory,
+        fasta     : options.fasta,
         username  : admin_username,
         password  : admin_password,
         blatdb    : options.blatdb ?: null,

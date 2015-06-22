@@ -55,6 +55,8 @@ public class OrganismPanel extends Composite {
     @UiField
     TextBox blatdb;
     @UiField
+    TextBox fasta;
+    @UiField
     TextBox genus;
     @UiField
     TextBox species;
@@ -185,13 +187,10 @@ public class OrganismPanel extends Composite {
             setNoSelection();
             return;
         }
-        organismName.setEnabled(true);
-        blatdb.setEnabled(true);
-        genus.setEnabled(true);
-        species.setEnabled(true);
+        setTextEnabled(true);
 
         organismName.setText(organismInfo.getName());
-        blatdb.setText(organismInfo.getBlatDb());
+        fasta.setText(organismInfo.getFasta());
         genus.setText(organismInfo.getGenus());
         species.setText(organismInfo.getSpecies());
         sequenceFile.setText(organismInfo.getDirectory());
@@ -274,6 +273,7 @@ public class OrganismPanel extends Composite {
         organismInfo.setGenus(genus.getText());
         organismInfo.setSpecies(species.getText());
         organismInfo.setBlatDb(blatdb.getText());
+        organismInfo.setFasta(fasta.getText());
 
         createButton.setEnabled(false);
         createButton.setText("Processing");
@@ -320,6 +320,13 @@ public class OrganismPanel extends Composite {
         }
     }
 
+    @UiHandler("fasta")
+    public void handleFastaChange(ChangeEvent changeEvent) {
+        if(singleSelectionModel.getSelectedObject()!=null) {
+            singleSelectionModel.getSelectedObject().setFasta(fasta.getText());
+            updateOrganismInfo();
+        }
+    }
 
     @UiHandler("species")
     public void handleSpeciesChange(ChangeEvent changeEvent) {
@@ -397,6 +404,7 @@ public class OrganismPanel extends Composite {
         genus.setEnabled(enabled);
         species.setEnabled(enabled);
         blatdb.setEnabled(enabled);
+        fasta.setEnabled(enabled);
     }
     //Utility function for clearing the textboxes ("")
     public void clearTextBoxes() {
@@ -405,6 +413,7 @@ public class OrganismPanel extends Composite {
         genus.setText("");
         species.setText("");
         blatdb.setText("");
+        fasta.setText("");
     }
 
 
