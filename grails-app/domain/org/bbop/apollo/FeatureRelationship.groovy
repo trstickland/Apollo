@@ -9,7 +9,6 @@ class FeatureRelationship implements  Ontological{
     static auditable =  true
 
     static constraints = {
-//        type nullable: true
         rank nullable: true
         value nullable: true
     }
@@ -31,7 +30,6 @@ class FeatureRelationship implements  Ontological{
 
 
     public boolean equals(Object other) {
-//        if ( (this == other ) ) return true;
         if ( (other == null ) ) return false;
         if ( !(other instanceof FeatureRelationship) ) return false;
         FeatureRelationship castOther = ( FeatureRelationship ) other;
@@ -55,7 +53,6 @@ class FeatureRelationship implements  Ontological{
 
     public FeatureRelationship generateClone() {
         FeatureRelationship cloned = new FeatureRelationship();
-//        cloned.type = this.type;
         cloned.parentFeature = this.parentFeature;
         cloned.childFeature = this.childFeature;
         cloned.value = this.value;

@@ -41,12 +41,37 @@ class SequenceService {
         String returnResidue = ""
         Sequence s=featureLocationList.first().sequence
         IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(s.organism.fasta))
+        int fmin= Integer.MAX_VALUE;
+        int fmax= Integer.MIN_VALUE;
+        try {
+
+            throw new Exception()
+        }
+        catch(Exception e) {
+            e.printStackTrace()
+        }
+        log.debug "Testing"
 
         for(FeatureLocation featureLocation in featureLocationList){
+            if(featureLocation.fmin<fmin) fmin=featureLocation.fmin;
+            if(featureLocation.fmax>fmax) fmax=featureLocation.fmax;
             log.debug "Iterating feature location ${featureLocation}"
-            returnResidue += getResidueFromFeatureLocation(featureLocation, file)
         }
-        
+
+        String tempResidues= getResiduesFromSequence(s, fmin, fmax, file)
+
+        for(FeatureLocation featureLocation in featureLocationList) {
+            try {
+                def t=tempResidues.substring(featureLocation.fmin-fmin,featureLocation.fmax-fmin)
+                log.debug "t ${t} ${featureLocation.fmin} ${fmin} ${featureLocation.fmax} ${fmax}"
+                returnResidue+=t
+            }
+            catch(Exception e) {
+
+            }
+
+        }
+
         if(featureLocationList.first().strand==Strand.NEGATIVE.value){
             returnResidue = SequenceTranslationHandler.reverseComplementSequence(returnResidue)
         }
@@ -60,7 +85,7 @@ class SequenceService {
 
     String getResiduesFromSequence(Sequence sequence, int fmin, int fmax, IndexedFastaSequenceFile file) {
         log.debug "${sequence} ${fmin} ${fmax} ${sequence.name}"
-        def nucs=file.getSubsequenceAt(sequence.name,fmin,fmax)
+        def nucs=file.getSubsequenceAt(sequence.name,fmin+1,fmax)
         def bases=new String(nucs.getBases())
         log.debug bases
         return bases

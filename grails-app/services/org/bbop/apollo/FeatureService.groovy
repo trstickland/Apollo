@@ -1999,13 +1999,10 @@ public void setTranslationEnd(Transcript transcript, int translationEnd) {
                     jsonFeature.put(FeatureStringEnum.RESIDUES.value, sequenceAlteration.alterationResidue);
                 }
             } else if (includeSequence) {
-                // don't think we handle this case
-//                else{
                 String residues = sequenceService.getResiduesFromFeature(gsolFeature)
                 if (residues) {
                     jsonFeature.put(FeatureStringEnum.RESIDUES.value, residues);
                 }
-//                }
             }
             Collection<FeatureProperty> gsolFeatureProperties = gsolFeature.getFeatureProperties();
 //            properties: [{value: "demo", type: {name: "owner", cv: {name: "feature_property"}}}]

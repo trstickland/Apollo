@@ -31,6 +31,7 @@ public class RestService {
             builder.setRequestData(data);
         }
         builder.setHeader("Content-type", "application/x-www-form-urlencoded");
+        builder.setTimeoutMillis(50000);
         try {
             if(requestCallback!=null){
                 builder.setCallback(requestCallback);
