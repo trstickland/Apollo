@@ -17,6 +17,7 @@ class SequenceServiceIntegrationSpec extends IntegrationSpec {
         Organism organism = new Organism(
                 directory: "/tmp"
                 ,commonName: "sampleAnimal"
+                ,fasta: "/tmp/test.fa"
         ).save(flush: true)
 
         Sequence sequence = new Sequence(

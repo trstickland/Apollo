@@ -16,6 +16,7 @@ class OrganismControllerSpec extends Specification {
         params["species"] = 'rerio'
         params["commonName"] = 'Zebrafish'
         params["directory"] = '/opt/apollo/organism1/jbrowse/data'
+        params["fasta"] = '/opt/apollo/organism1/fasta.fa'
     }
 
 

@@ -39,9 +39,12 @@ class SequenceService {
             order("fmin","asc")
         }
         String returnResidue = ""
+        Sequence s=featureLocationList.first().sequence
+        IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(s.organism.fasta))
 
         for(FeatureLocation featureLocation in featureLocationList){
-            returnResidue += getResidueFromFeatureLocation(featureLocation)
+            log.debug "Iterating feature location ${featureLocation}"
+            returnResidue += getResidueFromFeatureLocation(featureLocation, file)
         }
         
         if(featureLocationList.first().strand==Strand.NEGATIVE.value){
@@ -51,13 +54,12 @@ class SequenceService {
         return returnResidue
     }
 
-    String getResidueFromFeatureLocation(FeatureLocation featureLocation) {
-        return getResiduesFromSequence(featureLocation.sequence,featureLocation.fmin,featureLocation.fmax)
+    String getResidueFromFeatureLocation(FeatureLocation featureLocation, IndexedFastaSequenceFile file) {
+        return getResiduesFromSequence(featureLocation.sequence,featureLocation.fmin,featureLocation.fmax, file)
     }
 
-    String getResiduesFromSequence(Sequence sequence, int fmin, int fmax) {
+    String getResiduesFromSequence(Sequence sequence, int fmin, int fmax, IndexedFastaSequenceFile file) {
         log.debug "${sequence} ${fmin} ${fmax} ${sequence.name}"
-        IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(sequence.organism.fasta))
         def nucs=file.getSubsequenceAt(sequence.name,fmin,fmax)
         def bases=new String(nucs.getBases())
         log.debug bases
