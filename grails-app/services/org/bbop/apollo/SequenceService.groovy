@@ -58,7 +58,10 @@ class SequenceService {
     String getResiduesFromSequence(Sequence sequence, int fmin, int fmax) {
         log.debug "${sequence} ${fmin} ${fmax} ${sequence.name}"
         IndexedFastaSequenceFile file=new IndexedFastaSequenceFile(new File(sequence.organism.fasta))
-        return file.getSubsequenceAt(sequence.name,fmin,fmax)
+        def nucs=file.getSubsequenceAt(sequence.name,fmin,fmax)
+        def bases=new String(nucs.getBases())
+        log.debug bases
+        return bases
     }
 
 
