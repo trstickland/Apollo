@@ -70,22 +70,6 @@ class SequenceService {
     }
     
 
-
-    private String[] splitStringByNumberOfCharacters(String str, int numOfChars) {
-        int numTokens = str.length() / numOfChars;
-        if (str.length() % numOfChars != 0) {
-            ++numTokens;
-        }
-        String []tokens = new String[numTokens];
-        int idx = 0;
-        for (int i = 0; i < numTokens; ) {
-            tokens[i] = str.substring(idx, idx + numOfChars < str.length() ? idx + numOfChars : str.length());
-            ++i
-            idx += numOfChars
-        }
-        return tokens;
-    }
-
     private JSONArray convertJBrowseJSON(InputStream inputStream) throws IOException, JSONException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder buffer = new StringBuilder();
@@ -102,7 +86,7 @@ class SequenceService {
         organism.save(flush: true, failOnError: true,insert:false)
 
         File refSeqsFile = new File(organism.refseqFile);
-        log.info " file exists ${refSeqsFile.exists()}"
+        log.info "file exists ${refSeqsFile.exists()}"
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(refSeqsFile));
         JSONArray refSeqs = convertJBrowseJSON(bufferedInputStream);
         log.debug "refseq length ${refSeqs.size()}"
@@ -239,9 +223,7 @@ class SequenceService {
     }
     
     def getSequenceForFeatures(JSONObject inputObject, File outputFile=null) {
-        // Method returns a JSONObject 
-        // Suitable for 'get sequence' operation from AEC
-        log.debug "input at getSequenceForFeature: ${inputObject}"
+        log.debug "getSequenceForFeature: ${inputObject}"
         JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         String type = inputObject.getString(FeatureStringEnum.TYPE.value)
         int flank
@@ -266,6 +248,7 @@ class SequenceService {
     }
     
     def getGff3ForFeature(JSONObject inputObject, File outputFile) {
+        log.debug "getGff3ForFeature"
         List<Feature> featuresToWrite = new ArrayList<>();
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
         for (int i = 0; i < features.length(); ++i) {
