@@ -47,7 +47,6 @@ return declare( Sequence,
      */
     constructor: function( args ) {
         this.context_path = "..";
-        this.annotationPrefix = "Annotations-";
         this.loadTranslationTable();
         this.loadSequenceAlterations();
         this.annotStoreConfig=lang.mixin(lang.clone(this.config),{browser:this.browser,refSeq:this.refSeq});
@@ -86,7 +85,7 @@ return declare( Sequence,
     requestDeletion: function(selected)  {
         var features = [{uniquename: selected.id()}];
         var postData = {
-            "track": this.annotationPrefix+this.refSeq.name,
+            "track": this.refSeq.name,
             "features": features,
             "operation": "delete_sequence_alteration"
         };
@@ -392,7 +391,7 @@ return declare( Sequence,
                     }
                     var features = [feature];
                     var postData = {
-                        "track": track.annotationPrefix+track.refSeq.name,
+                        "track": track.refSeq.name,
                         "features": features,
                         "operation": "add_sequence_alteration"
                     };
@@ -419,7 +418,7 @@ return declare( Sequence,
         var thisB = this;
         return xhr.post( this.context_path + "/AnnotationEditorService",
         {
-            data: JSON.stringify({ "track": this.annotationPrefix+this.refSeq.name, "operation": "get_translation_table" }),
+            data: JSON.stringify({ "track": this.refSeq.name, "operation": "get_translation_table" }),
             handleAs: "json"
         }).then(function(response) {
             thisB._codonTable=thisB.generateCodonTable(response.translation_table);
@@ -435,7 +434,7 @@ return declare( Sequence,
         var track = this;
         return xhr.post( this.context_path + "/AnnotationEditorService",
         {
-            data: JSON.stringify({ "track": this.annotationPrefix+this.refSeq.name, "operation": "get_sequence_alterations" }),
+            data: JSON.stringify({ "track": this.refSeq.name, "operation": "get_sequence_alterations" }),
             handleAs: "json"
         }).then(
             function(response) {
