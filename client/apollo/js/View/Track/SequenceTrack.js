@@ -6,7 +6,8 @@ define( [
     'WebApollo/View/Track/DraggableHTMLFeatures',
     'WebApollo/JSONUtils',
     'WebApollo/Permission',
-    'dojox/widget/Standby'
+    'dojox/widget/Standby',
+    'jquery'
      ],
 function( declare,
     xhr,
@@ -15,7 +16,8 @@ function( declare,
     DraggableFeatureTrack,
     JSONUtils,
     Permission,
-    Standby
+    Standby,
+    $
 ) {
 
 var SequenceTrack = declare( "SequenceTrack", DraggableFeatureTrack,
@@ -667,7 +669,7 @@ var SequenceTrack = declare( "SequenceTrack", DraggableFeatureTrack,
 
     initContextMenu: function() {
         var thisObj = this;
-        thisObj.contextMenuItems = new Array();
+        thisObj.contextMenuItems = [];
         thisObj.annot_context_menu = new dijit.Menu({});
 
         var index = 0;
@@ -702,7 +704,7 @@ var SequenceTrack = declare( "SequenceTrack", DraggableFeatureTrack,
         /**
          *   context menu for right click on sequence residues
          */
-        thisObj.residuesMenuItems = new Array();
+        thisObj.residuesMenuItems = [];
         thisObj.residues_context_menu = new dijit.Menu({});
         index = 0;
 

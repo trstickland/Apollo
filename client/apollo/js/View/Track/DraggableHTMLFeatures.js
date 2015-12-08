@@ -13,7 +13,8 @@ define( [
             'jqueryui/draggable',
             'JBrowse/Util', 
             'JBrowse/Model/SimpleFeature', 
-            'WebApollo/SequenceOntologyUtils'
+            'WebApollo/SequenceOntologyUtils',
+            'WebApollo/View/Track/SequenceTrack'
         ],
     function( declare,
         array,
@@ -29,7 +30,9 @@ define( [
         draggable,
         Util, 
         SimpleFeature,
-        SeqOnto ) {
+        SeqOnto,
+        SequenceTrack
+    ) {
 
 var debugFrame = false;
 

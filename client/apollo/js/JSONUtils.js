@@ -235,7 +235,7 @@ JSONUtils.createApolloFeature = function( jfeature, specified_type, useName, spe
         console.log(jfeature);
     }
 
-    var afeature = new Object();
+    var afeature = {};
     var astrand;
     // Apollo feature strand must be an integer
     //     either 1 (plus strand), -1 (minus strand), or 0? (not stranded or strand is unknown?)

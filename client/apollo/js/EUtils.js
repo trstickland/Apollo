@@ -19,7 +19,7 @@ EUtils.prototype.validateId = function(db, id) {
 			valid = !response.eSearchResult.ErrorList;
 		}, 
 		error: function(response, ioArgs) {
-			errorHandler(response);
+			this.errorHandler(response);
 		}
 	});
 	return valid;
@@ -36,7 +36,7 @@ EUtils.prototype.fetch = function(db, id) {
 			record = response.PubmedArticleSet.PubmedArticle ? response : null;
 		}, 
 		error: function(response, ioArgs) {
-			errorHandler(response);
+			this.errorHandler(response);
 		}
 	});
 	return record;

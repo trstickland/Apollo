@@ -915,8 +915,8 @@ define([
             createAnnotations: function (selection_records) {
                 console.log('createAnnotations');
                 var target_track = this;
-                var featuresToAdd = new Array();
-                var parentFeatures = new Object();
+                var featuresToAdd = [];
+                var parentFeatures = {};
                 var subfeatures = [];
                 var strand;
                 var parentFeature;
@@ -978,9 +978,9 @@ define([
                         featureToAdd.set('name', featureToAdd.get('id'));
                     }
                     featureToAdd.set("strand", strand);
-                    var fmin = undefined;
-                    var fmax = undefined;
-                    featureToAdd.set('subfeatures', new Array());
+                    var fmin ;
+                    var fmax ;
+                    featureToAdd.set('subfeatures', []);
                     array.forEach(subfeatures, function (subfeature) {
                         if (!singleParent && SequenceOntologyUtils.cdsTerms[subfeature.get("type")]) {
                             return;
@@ -1058,8 +1058,8 @@ define([
 
             createGenericAnnotations: function (feats, type, subfeatType, topLevelType) {
                 var target_track = this;
-                var featuresToAdd = new Array();
-                var parentFeatures = new Object();
+                var featuresToAdd = [];
+                var parentFeatures = {};
                 for (var i in feats) {
                     var dragfeat = feats[i];
 
@@ -1071,7 +1071,7 @@ define([
                     var parentId = is_subfeature ? dragfeat.parent().id() : dragfeat.id();
 
                     if (parentFeatures[parentId] === undefined) {
-                        parentFeatures[parentId] = new Array();
+                        parentFeatures[parentId] = [];
                         parentFeatures[parentId].isSubfeature = is_subfeature;
                     }
                     parentFeatures[parentId].push(dragfeat);
@@ -1081,11 +1081,11 @@ define([
                     var featArray = parentFeatures[i];
                     if (featArray.isSubfeature) {
                         var parentFeature = featArray[0].parent();
-                        var fmin = undefined;
-                        var fmax = undefined;
+                        var fmin;
+                        var fmax;
                         // var featureToAdd = $.extend({}, parentFeature);
                         var featureToAdd = JSONUtils.makeSimpleFeature(parentFeature);
-                        featureToAdd.set('subfeatures', new Array());
+                        featureToAdd.set('subfeatures', []);
                         for (var k = 0; k < featArray.length; ++k) {
                             // var dragfeat = featArray[k];
                             var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
@@ -1103,11 +1103,11 @@ define([
                         featureToAdd.set("end", fmax);
                         var afeat = JSONUtils.createApolloFeature(featureToAdd, type, true, subfeatType);
                         if (topLevelType) {
-                            var topLevel = new Object();
+                            var topLevel = {};
                             topLevel.location = dojo.clone(afeat.location);
                             topLevel.type = dojo.clone(afeat.type);
                             topLevel.type.name = topLevelType;
-                            topLevel.children = new Array();
+                            topLevel.children = [];
                             topLevel.children.push(afeat);
                             afeat = topLevel;
                         }
@@ -1118,11 +1118,11 @@ define([
                             var dragfeat = featArray[k];
                             var afeat = JSONUtils.createApolloFeature(dragfeat, type, true, subfeatType);
                             if (topLevelType) {
-                                var topLevel = new Object();
+                                var topLevel = {};
                                 topLevel.location = dojo.clone(afeat.location);
                                 topLevel.type = dojo.clone(afeat.type);
                                 topLevel.type.name = topLevelType;
-                                topLevel.children = new Array();
+                                topLevel.children = [];
                                 topLevel.children.push(afeat);
                                 afeat = topLevel;
                             }
@@ -1136,8 +1136,8 @@ define([
 
             createGenericOneLevelAnnotations: function (feats, type, strandless) {
                 var target_track = this;
-                var featuresToAdd = new Array();
-                var parentFeatures = new Object();
+                var featuresToAdd = [];
+                var parentFeatures = {};
                 for (var i in feats) {
                     var dragfeat = feats[i];
 
@@ -1149,7 +1149,7 @@ define([
                     var parentId = is_subfeature ? dragfeat.parent().id() : dragfeat.id();
 
                     if (parentFeatures[parentId] === undefined) {
-                        parentFeatures[parentId] = new Array();
+                        parentFeatures[parentId] = [];
                         parentFeatures[parentId].isSubfeature = is_subfeature;
                     }
                     parentFeatures[parentId].push(dragfeat);
@@ -1159,11 +1159,11 @@ define([
                     var featArray = parentFeatures[i];
                     if (featArray.isSubfeature) {
                         var parentFeature = featArray[0].parent();
-                        var fmin = undefined;
-                        var fmax = undefined;
+                        var fmin;
+                        var fmax;
                         // var featureToAdd = $.extend({}, parentFeature);
                         var featureToAdd = JSONUtils.makeSimpleFeature(parentFeature);
-                        featureToAdd.set('subfeatures', new Array());
+                        featureToAdd.set('subfeatures', []);
                         for (var k = 0; k < featArray.length; ++k) {
                             // var dragfeat = featArray[k];
                             var dragfeat = JSONUtils.makeSimpleFeature(featArray[k]);
@@ -1230,8 +1230,8 @@ define([
 
             duplicateAnnotations: function (feats) {
                 var track = this;
-                var featuresToAdd = new Array();
-                var subfeaturesToAdd = new Array();
+                var featuresToAdd = [];
+                var subfeaturesToAdd = [];
                 var proteinCoding = false;
                 for (var i in feats) {
                     var feat = feats[i];
@@ -1250,11 +1250,11 @@ define([
                 }
                 if (subfeaturesToAdd.length > 0) {
                     var feature = new SimpleFeature();
-                    var subfeatures = new Array();
+                    var subfeatures = [];
                     feature.set('subfeatures', subfeatures);
-                    var fmin = undefined;
-                    var fmax = undefined;
-                    var strand = undefined;
+                    var fmin;
+                    var fmax;
+                    var strand;
                     for (var i = 0; i < subfeaturesToAdd.length; ++i) {
                         var subfeature = subfeaturesToAdd[i];
                         if (fmin === undefined || subfeature.get('start') < fmin) {
@@ -1558,7 +1558,7 @@ define([
 
             flipStrandForSelectedFeatures: function (records) {
                 var track = this;
-                var uniqueNames = new Object();
+                var uniqueNames = {};
                 for (var i in records) {
                     var record = records[i];
                     var selfeat = record.feature;
@@ -1972,7 +1972,7 @@ define([
                     innerHTML: "Status"
                 }, statusDiv);
                 var statusFlags = dojo.create("div", {'class': "status"}, statusDiv);
-                var statusRadios = new Object();
+                var statusRadios = {};
 
                 if (!hasWritePermission) {
                     nameField.set("disabled", true);
@@ -2176,7 +2176,7 @@ define([
                     innerHTML: "Status"
                 }, statusDiv);
                 var statusFlags = dojo.create("div", {'class': "status"}, statusDiv);
-                var statusRadios = new Object();
+                var statusRadios = {};
 
                 var dbxrefsDiv = dojo.create("div", {'class': "annotation_info_editor_section"}, content);
                 var dbxrefsLabel = dojo.create("div", {
@@ -2564,7 +2564,7 @@ define([
                         });
 
                         dojo.connect(deleteDbxrefButton, "onclick", function () {
-                            var toBeDeleted = new Array();
+                            var toBeDeleted = [];
                             var selected = dbxrefTable.selection.getSelected();
                             for (var i = 0; i < selected.length; ++i) {
                                 var item = selected[i];
@@ -2676,7 +2676,7 @@ define([
                         });
 
                         dojo.connect(deleteAttributeButton, "onclick", function () {
-                            var toBeDeleted = new Array();
+                            var toBeDeleted = [];
                             var selected = attributeTable.selection.getSelected();
                             for (var i = 0; i < selected.length; ++i) {
                                 var item = selected[i];
@@ -2764,7 +2764,7 @@ define([
                         });
 
                         dojo.connect(deletePubmedIdButton, "onclick", function () {
-                            var toBeDeleted = new Array();
+                            var toBeDeleted = [];
                             var selected = pubmedIdTable.selection.getSelected();
                             for (var i = 0; i < selected.length; ++i) {
                                 var item = selected[i];
@@ -2902,7 +2902,7 @@ define([
                         });
 
                         dojo.connect(deleteGoIdButton, "onclick", function () {
-                            var toBeDeleted = new Array();
+                            var toBeDeleted = [];
                             var selected = goIdTable.selection.getSelected();
                             for (var i = 0; i < selected.length; ++i) {
                                 var item = selected[i];
@@ -2989,7 +2989,7 @@ define([
                         });
 
                         dojo.connect(deleteCommentButton, "onclick", function () {
-                            var toBeDeleted = new Array();
+                            var toBeDeleted = [];
                             var selected = commentTable.selection.getSelected();
                             for (var i = 0; i < selected.length; ++i) {
                                 var comment = commentTable.store.getValue(selected[i], "comment");
@@ -3063,7 +3063,7 @@ define([
                     config.hasGoIds ? getGoIds() : dojo.style(goIdsDiv, "display", "none");
                     if (config.hasComments) {
                         getCannedComments();
-                        getComments();
+                        //getComments();
                     }
                     else {
                         dojo.style(commentsDiv, "display", "none");
@@ -3357,7 +3357,7 @@ define([
                         timeout: 5000 * 1000, // Time in milliseconds
                         load: function (response, ioArgs) {
                             var feature = response.features[0];
-                            cannedComments = feature.comments;
+                            var cannedComments = feature.comments;
                         },
                         // The ERROR function will be called in an error case.
                         error: function (response, ioArgs) {
@@ -3482,8 +3482,8 @@ define([
                 var historyPreviewDiv = dojo.create("div", {className: "history_preview"}, historyDiv);
                 var history;
                 var selectedIndex = 0;
-                var minFmin = undefined;
-                var maxFmax = undefined;
+                var minFmin;
+                var maxFmax;
                 var current;
                 var historyMenu;
                 var canEdit = this.canEdit(selected[0].feature);
@@ -3539,7 +3539,7 @@ define([
                     var maxLength = maxFmax - minFmin;
 // track.featureStore._add_getters(track.attrs.accessors().get, jfeature);
                     historyPreviewDiv.featureLayout = new Layout(fmin, fmax);
-                    historyPreviewDiv.featureNodes = new Array();
+                    historyPreviewDiv.featureNodes = [];
                     historyPreviewDiv.startBase = minFmin - (maxLength * 0.1);
                     historyPreviewDiv.endBase = maxFmax + (maxLength * 0.1);
                     var coords = dojo.position(historyPreviewDiv);
@@ -3969,9 +3969,9 @@ define([
 
             searchSequence: function () {
                 var track = this;
-                var starts = new Object();
+                var starts = {};
                 var browser = track.gview.browser;
-                for (i in browser.allRefs) {
+                for (var i in browser.allRefs) {
                     var refSeq = browser.allRefs[i];
                     starts[refSeq.name] = refSeq.start;
                 }
@@ -4050,26 +4050,27 @@ define([
                 var vregion = this.gview.visibleRegion();
                 var coordinate = (vregion.start + vregion.end) / 2;
                 var selected = this.selectionManager.getSelection();
+                function centerAtBase(position) {
+                    track.gview.centerAtBase(position, false);
+                    track.selectionManager.removeFromSelection(selected[0]);
+                    var subfeats = selfeat.get("subfeatures");
+                    for (var i = 0; i < subfeats.length; ++i) {
+                        if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
+                            continue;
+                        }
+                        // skip CDS features
+                        if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
+                            continue;
+                        }
+                        if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
+                            track.selectionManager.addToSelection({feature: subfeats[i], track: track});
+                            break;
+                        }
+                    }
+                };
                 if (selected && (selected.length > 0)) {
 
-                    function centerAtBase(position) {
-                        track.gview.centerAtBase(position, false);
-                        track.selectionManager.removeFromSelection(selected[0]);
-                        var subfeats = selfeat.get("subfeatures");
-                        for (var i = 0; i < subfeats.length; ++i) {
-                            if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
-                                continue;
-                            }
-                            // skip CDS features
-                            if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
-                                continue;
-                            }
-                            if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
-                                track.selectionManager.addToSelection({feature: subfeats[i], track: track});
-                                break;
-                            }
-                        }
-                    };
+                    
 
                     var selfeat = selected[0].feature;
                     // find current center genome coord, compare to subfeatures,
@@ -4121,26 +4122,27 @@ define([
                 var vregion = this.gview.visibleRegion();
                 var coordinate = (vregion.start + vregion.end) / 2;
                 var selected = this.selectionManager.getSelection();
+                function centerAtBase(position) {
+                    track.gview.centerAtBase(position, false);
+                    track.selectionManager.removeFromSelection(selected[0]);
+                    var subfeats = selfeat.get("subfeatures");
+                    for (var i = 0; i < subfeats.length; ++i) {
+                        if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
+                            continue;
+                        }
+                        // skip CDS features
+                        if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
+                            continue;
+                        }
+                        if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
+                            track.selectionManager.addToSelection({feature: subfeats[i], track: track});
+                            break;
+                        }
+                    }
+                };
                 if (selected && (selected.length > 0)) {
 
-                    function centerAtBase(position) {
-                        track.gview.centerAtBase(position, false);
-                        track.selectionManager.removeFromSelection(selected[0]);
-                        var subfeats = selfeat.get("subfeatures");
-                        for (var i = 0; i < subfeats.length; ++i) {
-                            if (track.selectionManager.unselectableTypes[subfeats[i].get("type")]) {
-                                continue;
-                            }
-                            // skip CDS features
-                            if (SequenceOntologyUtils.cdsTerms[subfeats[i].get("type")] || subfeats[i].get("type") == "wholeCDS") {
-                                continue;
-                            }
-                            if (position >= subfeats[i].get("start") && position <= subfeats[i].get("end")) {
-                                track.selectionManager.addToSelection({feature: subfeats[i], track: track});
-                                break;
-                            }
-                        }
-                    };
+                    
 
                     var selfeat = selected[0].feature;
                     // find current center genome coord, compare to subfeatures,
@@ -4361,7 +4363,7 @@ define([
                         })
                     );
                     var userMenu = browser.makeGlobalMenu('user');
-                    loginButton = new dijitDropDownButton(
+                    var loginButton = new dijitDropDownButton(
                         {
                             className: 'user',
                             innerHTML: '<span class="usericon"></span>' + this.username,
@@ -4396,7 +4398,7 @@ define([
 
             initAnnotContextMenu: function () {
                 var thisB = this;
-                contextMenuItems = new Array();
+                contextMenuItems = [];
                 annot_context_menu = new dijit.Menu({});
                 var permission = thisB.permission;
                 var index = 0;

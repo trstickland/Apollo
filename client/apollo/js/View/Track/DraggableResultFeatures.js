@@ -1,8 +1,9 @@
 define( [
          'dojo/_base/declare',
-         'WebApollo/View/Track/DraggableHTMLFeatures'
+         'WebApollo/View/Track/DraggableHTMLFeatures',
+         'WebApollo/JSONUtils'
          ],
-         function( declare, DraggableFeatureTrack) {
+         function( declare, DraggableFeatureTrack, JSONUtils ) {
 
 var DraggableResultFeatures = declare( DraggableFeatureTrack, {   
     constructor: function(args)  {  },
@@ -28,7 +29,7 @@ var DraggableResultFeatures = declare( DraggableFeatureTrack, {
                 iconClass: 'dijitIconEdit',
                 onClick: function() {
                     if (confirm("Are you sure you want to promote all annotations?")) {
-                        var featuresToAdd = new Array();
+                        var featuresToAdd = [];
                         track.store.getFeatures({start: track.store.refSeq.start, end: track.store.refSeq.end}, function(feature) {
                             var afeat = JSONUtils.createApolloFeature(feature, "transcript");
                             featuresToAdd.push(afeat);
