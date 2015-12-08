@@ -1,5 +1,6 @@
 define( [
             'dojo/_base/declare',
+            'dojo/_base/array',
             'dojo/dom-construct',
             'dojo/dom-attr',
             'dojo/on',
@@ -10,9 +11,11 @@ define( [
             'WebApollo/JSONUtils',
             'JBrowse/Util', 
             'JBrowse/View/GranularRectLayout',
-            'dojo/request/xhr'
+            'dojo/request'
         ],
-        function( declare,
+        function(
+          declare,
+          array,
           domConstruct,
           domAttr,
           on,
@@ -23,11 +26,11 @@ define( [
           JSONUtils, 
           Util,
           Layout,
-          xhr)
+          request)
         {
 
 var context_path='..';
-return declare([],{
+return declare( null, {
 
     getSequence: function()  {
         var selected = this.selectionManager.getSelection();
@@ -59,54 +62,41 @@ return declare([],{
         var genomicWithFlankFieldLabel = domConstruct.create("label", { innerHTML: "bases", className: "button_label" }, genomicWithFlankButtonDiv);
 
         var fetchSequence = function(type) {
-            var features = [];
-            for (var i = 0; i < records.length; ++i)  {
-                var record = records[i];
-                var annot = record.feature;
-                var seltrack = record.track;
-                var uniqueName = annot.getUniqueName();
-                // just checking to ensure that all features in selection are
-                // from this track
-                if (seltrack === track)  {
-                    var trackdiv = track.div;
-                    var trackName = track.getUniqueTrackName();
-
-                    features.push( { "uniquename": uniqueName });
-                }
-            }
-            var operation = "get_sequence";
+            var features = array.map(records, function(record) {
+                return { "uniquename": record.feature.getUniqueName() };
+            });
             var trackName = track.getUniqueTrackName();
-            var postData = { "track": trackName, "features": features, "operation": operation };
+            var postData = { "track": trackName, "features": features };
             var flank = 0;
             if (type == "genomic_with_flank") {
                 flank = domAttr.get(genomicWithFlankField, "value");
-                postData.flank=flank;
                 type = "genomic";
             }
+            postData.flank=flank;
             postData.type=type;
-            xhr.post(context_path + "/AnnotationEditorService", {
-                data: JSON.stringify(postData),
+            console.log(postData);
+            request(context_path + "/annotationEditor/getSequence", {
+                data: "data="+JSON.stringify(postData),
                 handleAs: "json",
-                timeout: 5000 * 1000
-            }).then(function(response, ioArgs) {
+                timeout: 5000 * 1000,
+                method: "post"
+            }).then(function(response) {
                 var textAreaContent = "";
-                for (var i = 0; i < response.features.length; ++i) {
-                        var feature = response.features[i];
-                        var cvterm = feature.type;
-                        var residues = feature.residues;
-                        var loc = feature.location;
-                        textAreaContent += "&gt;" + feature.uniquename + " (" + cvterm.cv.name + ":" + cvterm.name + ") " + residues.length + " residues [" + track.refSeq.name + ":" + (loc.fmin + 1) + "-" + loc.fmax + " " + (loc.strand == -1 ? "-" : loc.strand == 1 ? "+" : "no") + " strand] ["+ type + (flank > 0 ? " +/- " + flank + " bases" : "") + "]\n";
-                        var lineLength = 70;
-                        for (var j = 0; j < residues.length; j += lineLength) {
-                                textAreaContent += residues.substr(j, lineLength) + "\n";
-                        }
-                }
+                console.log(response);
+                array.forEach(response.features, function(feature) {
+                    var cvterm = feature.type;
+                    var residues = feature.residues;
+                    var loc = feature.location;
+                    textAreaContent += "&gt;" + feature.uniquename + " (" + cvterm.cv.name + ":" + cvterm.name + ") " + residues.length + " residues [" + track.refSeq.name + ":" + (loc.fmin + 1) + "-" + loc.fmax + " " + (loc.strand == -1 ? "-" : loc.strand == 1 ? "+" : "no") + " strand] ["+ type + (flank > 0 ? " +/- " + flank + " bases" : "") + "]\n";
+                    var lineLength = 70;
+                    for (var j = 0; j < residues.length; j += lineLength) {
+                        textAreaContent += residues.substr(j, lineLength) + "\n";
+                    }
+                });
                 domAttr.set(textArea, "innerHTML", textAreaContent);
             },
-            function(response, ioArgs) {
-                track.handleError(response);
-                console.log("Annotation server error--maybe you forgot to login to the server?");
-                console.error("HTTP status code: ", ioArgs.xhr.status);
+            function(response) {
+                console.log(response);
                 return response;
             });
         };

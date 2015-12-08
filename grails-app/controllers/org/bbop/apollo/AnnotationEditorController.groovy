@@ -527,16 +527,20 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
     ] )
     @Timed
     def getSequenceAlterations() {
-        JSONObject returnObject = (request.JSON ?: JSON.parse(params.data)) as JSONObject
-
-        Sequence sequence = permissionService.checkPermissions(returnObject, PermissionEnum.READ)
-
+        Sequence sequence = Sequence.findByName(params.track)
         JSONArray jsonFeatures = new JSONArray()
         returnObject.put(FeatureStringEnum.FEATURES.value, jsonFeatures)
         def sequenceTypes = [Insertion.class.canonicalName, Deletion.class.canonicalName, Substitution.class.canonicalName]
 
-        List<SequenceAlteration> sequenceAlterationList = Feature.executeQuery("select f from Feature f join f.featureLocations fl join fl.sequence s where s = :sequence and f.class in :sequenceTypes"
-                , [sequence: sequence, sequenceTypes: sequenceTypes])
+        def features = Feature.createCriteria().list {
+            featureLocations {
+                sequence {
+                    eq('name',params.track)
+                }
+            }
+            'in'('class',sequenceTypes)
+        }
+        
         for (SequenceAlteration alteration : sequenceAlterationList) {
             jsonFeatures.put(featureService.convertFeatureToJSON(alteration, true));
         }
@@ -847,16 +851,10 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             ,@RestApiParam(name="features", type="JSONArray", paramType = RestApiParamType.QUERY,description = "JSONArray of features objects to export defined by a unique name {'uniquename':'ABC123'}")
     ] )
     def getSequence() {
-        log.debug "getSequence ${params.data}"
-        JSONObject inputObject = (request.JSON ?: JSON.parse(params.data)) as JSONObject
-        if (!permissionService.hasPermissions(inputObject, PermissionEnum.EXPORT)) {
-            render status: HttpStatus.UNAUTHORIZED
-            return
-        }
-        JSONObject featureContainer = createJSONFeatureContainer()
-        JSONObject sequenceObject = sequenceService.getSequenceForFeatures(inputObject)
-        featureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(sequenceObject)
-        render featureContainer
+        def par=JSON.parse(params.data)
+
+        JSONArray sequenceObject = sequenceService.getSequenceForFeatures(par.features, par.type, par.flank)
+        render ([features: sequenceObject] as JSON)
     }
 
     @RestApiMethod(description="Get sequences search tools" ,path="/annotationEditor/getSequenceSearchTools")

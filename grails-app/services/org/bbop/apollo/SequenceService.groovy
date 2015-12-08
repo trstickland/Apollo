@@ -413,20 +413,8 @@ class SequenceService {
         return featureResidues
     }
     
-    def getSequenceForFeatures(JSONObject inputObject, File outputFile=null) {
-        // Method returns a JSONObject 
-        // Suitable for 'get sequence' operation from AEC
-        log.debug "input at getSequenceForFeature: ${inputObject}"
-        JSONArray featuresArray = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)
-        String type = inputObject.getString(FeatureStringEnum.TYPE.value)
-        int flank
-        if (inputObject.has('flank')) {
-            flank = inputObject.getInt("flank")
-            log.debug "flank from request object: ${flank}"
-        } else {
-            flank = 0
-        }
-
+    def getSequenceForFeatures(JSONArray featuresArray, String type, int flank, File outputFile=null) {
+        JSONArray outFeatures = new JSONArray()
         for (int i = 0; i < featuresArray.length(); ++i) {
             JSONObject jsonFeature = featuresArray.getJSONObject(i)
             String uniqueName = jsonFeature.get(FeatureStringEnum.UNIQUENAME.value)
@@ -436,8 +424,9 @@ class SequenceService {
             JSONObject outFeature = featureService.convertFeatureToJSON(gbolFeature)
             outFeature.put("residues", sequence)
             outFeature.put("uniquename", uniqueName)
-            return outFeature
+            outFeatures.push(outFeature)
         }
+        return outFeatures
     }
     
     def getGff3ForFeature(JSONObject inputObject, File outputFile) {
