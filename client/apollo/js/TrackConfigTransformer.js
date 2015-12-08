@@ -22,7 +22,7 @@ constructor: function( args )  {
     };
 
     this.transformers["JBrowse/View/Track/Sequence"] = function(trackConfig) {
-        trackConfig.type = "WebApollo/View/Track/AnnotSequenceTrack";
+        trackConfig.type = "WebApollo/View/Track/SequenceTrack";
         trackConfig.storeClass = "WebApollo/Store/SeqFeature/ScratchPad";
         trackConfig.style = { className: "{type}", 
                               uniqueIdField : "id" };

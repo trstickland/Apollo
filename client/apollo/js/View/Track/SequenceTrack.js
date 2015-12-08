@@ -1,43 +1,43 @@
-define([
-         'dojo/_base/declare',
-         'dojo/_base/lang',
-         'dojo/_base/array',
-         'dojo/mouse',
-         'dojo/dom-construct',
-         'dojo/query',
-         'dojo/dom',
-         'dojo/dom-style',
-         'dojo/dom-class',
-         'dojo/on',
-         'dijit/Menu',
-         'dijit/MenuItem',
-         'jquery',
-         'JBrowse/View/Track/Sequence',
-         'JBrowse/Util',
-         'WebApollo/JSONUtils',
-         'WebApollo/Permission',
-         'WebApollo/Store/SeqFeature/ScratchPad',
-         'dojo/request/xhr'
-],
-function(declare,
-         lang,
-         array,
-         mouse,
-         domConstruct,
-         query,
-         dom,
-         domStyle,
-         domClass,
-         on,
-         Menu,
-         MenuItem,
-         $,
-         Sequence,
-         Util,
-         JSONUtils,
-         Permission,
-         ScratchPad,
-         xhr) {
+define( [
+    'dojo/_base/declare',
+    'dojo/_base/lang',
+    'dojo/_base/array',
+    'dojo/mouse',
+    'dojo/dom-construct',
+    'dojo/query',
+    'dojo/dom',
+    'dojo/dom-style',
+    'dojo/dom-class',
+    'dojo/on',
+    'dijit/Menu',
+    'dijit/MenuItem',
+    'JBrowse/View/Track/Sequence',
+    'JBrowse/Util',
+    'WebApollo/JSONUtils',
+    'WebApollo/Permission',
+    'WebApollo/Store/SeqFeature/ScratchPad',
+    'dojo/request/xhr'
+     ],
+function(
+    declare,
+    lang,
+    array,
+    mouse,
+    domConstruct,
+    query,
+    dom,
+    domStyle,
+    domClass,
+    on,
+    Menu,
+    MenuItem,
+    Sequence,
+    Util,
+    JSONUtils,
+    Permission,
+    ScratchPad,
+    xhr
+     ) {
 
 return declare( Sequence,
 {
@@ -52,30 +52,6 @@ return declare( Sequence,
         this.loadSequenceAlterations();
         this.annotStoreConfig=lang.mixin(lang.clone(this.config),{browser:this.browser,refSeq:this.refSeq});
         this.alterationsStore = new ScratchPad(this.annotStoreConfig);
-        this.browser.getPlugin( 'WebApollo', dojo.hitch( this, function(p) {
-            this.webapollo = p;
-        }));
-    },
-    _defaultConfig: function() {
-        var thisConfig = this.inherited(arguments);
-        thisConfig.pinned = true;
-        return thisConfig;
-    },
-
-    /** removing "Pin to top" menuitem, so SequenceTrack is always pinned 
-     *    and "Delete track" menuitem, so can't be deleted
-     *   (very hacky since depends on label property of menuitem config)
-     */
-    _trackMenuOptions: function() {
-        var options = this.inherited( arguments );
-        options = this.removeItemWithLabel(options, "Pin to top");
-        options = this.removeItemWithLabel(options, "Delete track");
-        return options;
-    },
-    removeItemWithLabel: function(inarray, label) {
-        return array.filter(inarray,function(obj) {
-            return ! (obj.label && (obj.label === label));
-        });
     },
 
     /*
@@ -84,7 +60,7 @@ return declare( Sequence,
      */
     annotationsUpdatedNotification: function(annots)  {
         this.annotationsDeletedNotification(annots);
-        this.annotationsAddedNotification(annots);
+        this.annotationAddedNotification(annots);
     },
     annotationsAddedNotification: function(responseFeatures)  {
         for (var i = 0; i < responseFeatures.length; ++i) {
@@ -145,15 +121,7 @@ return declare( Sequence,
         var alterations=[];
         var leftBase=args.leftBase;
         var rightBase=args.rightBase;
-        var scale=args.scale;
-        this.alterationsStore.getFeatures({start: args.leftBase, end: args.rightBase-1 },function(f) { alterations.push(f); });
-        if(scale<1.3) {
-            this.hide();
-            return;
-        }
-        else {
-            this.show();
-        }
+        this.alterationsStore.getFeatures({start: args.leftBase, end: args.rightBase-1 },function(f) { alterations.push(f); }); 
         args.finishCallback=function() {
             finishCallback();
             // Add right-click menu
@@ -161,14 +129,17 @@ return declare( Sequence,
             var nl=query('.base',args.block.domNode);
             if(!nl.length) return;
 
-            thisB.renderAlterations(alterations,leftBase,rightBase,args.block.domNode,scale);
+            nl.style("backgroundColor","#E0E0E0");
+            thisB.renderAlterations(alterations,leftBase,rightBase,args.block.domNode,thisB);
 
             // render mouseover highlight
             nl.on(mouse.enter,function(evt) {
-                domClass.add(evt.target,"highlighted_base");
+                evt.target.oldColor=domStyle.get(evt.target,"backgroundColor");
+                domStyle.set(evt.target,"backgroundColor","orange");
             });
             nl.on(mouse.leave,function(evt) {
-                domClass.remove(evt.target,"highlighted_base");
+                domStyle.set(evt.target,"backgroundColor",evt.target.oldColor);
+                evt.target.oldColor=null
             });
             nl.forEach(function( featDiv ) {
                 var refreshMenu = lang.hitch( thisB, '_refreshMenu', featDiv );
@@ -201,60 +172,54 @@ return declare( Sequence,
     _makeFeatureContextMenu: function( featDiv,container ) {
         var thisB=this;
         var menu=new Menu();
-        var feature = featDiv.feature;
-        var hasPermission=this.webapollo.annotService.hasWritePermission()
         this.own( menu );
-        if(feature) {
+        if(featDiv.feature) {
             
             menu.addChild(new MenuItem({
-                label: "View details",
+                label: "View "+featDiv.feature.get("type")+" details",
                 iconClass: "dijitIconTask",
                 onClick: function(evt) {
                     console.log(featDiv.feature);
                     thisB._openDialog({
                         action: "contentDialog",
-                        title: "Sequence alteration",
-                        content: domConstruct.create('div',{innerHTML: '<p>'+feature.get('id')+'</p>'+feature.get('residues')?('<p>'+feature.get('residues')+'</p>'):''})
+                        title: "Add Insertion",
+                        content: domConstruct.create('p',{innerHTML: featDiv.feature.data.id})
                     },evt,featDiv);
                 }
             }));
-            if(hasPermission) {
-                menu.addChild(new MenuItem({
-                    label: "Remove "+featDiv.feature.get("type"),
-                    iconClass: "dijitIconDelete",
-                    onClick: function(evt) {
-                        thisB.requestDeletion(featDiv.feature);
-                    }
-                }));
-            }
+            menu.addChild(new MenuItem({
+                label: "Remove "+featDiv.feature.get("type"),
+                iconClass: "dijitIconDelete",
+                onClick: function(evt) {
+                    thisB.requestDeletion(featDiv.feature);
+                }
+            }));
         }
         else {
-            if(hasPermission) {
-                menu.addChild(new MenuItem({
-                    label: "Create insertion",
-                    iconClass: "dijitIconNewTask",
-                    onClick: function(evt){
-                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                        thisB.createGenomicInsertion(evt,gcoord-1);
-                    }
-                }));
-                menu.addChild(new MenuItem({
-                    label: "Create deletion",
-                    iconClass: "dijitIconDelete",
-                    onClick: function(evt){
-                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                        thisB.createGenomicDeletion(evt,gcoord-1);
-                    }
-                }));
-                menu.addChild(new MenuItem({
-                    label: "Create substitution",
-                    iconClass: "dijitIconEditProperty",
-                    onClick: function(evt){
-                        var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
-                        thisB.createGenomicSubstitution(evt,gcoord-1);
-                    }
-                }));
-            }
+            menu.addChild(new MenuItem({
+                label: "Create insertion",
+                iconClass: "dijitIconNewTask",
+                onClick: function(evt){
+                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                    thisB.createGenomicInsertion(evt,gcoord-1);
+                }
+            }));
+            menu.addChild(new MenuItem({
+                label: "Create deletion",
+                iconClass: "dijitIconDelete",
+                onClick: function(evt){
+                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                    thisB.createGenomicDeletion(evt,gcoord-1);
+                }
+            }));
+            menu.addChild(new MenuItem({
+                label: "Create substitution",
+                iconClass: "dijitIconEditProperty",
+                onClick: function(evt){
+                    var gcoord = Math.floor(thisB.browser.view.absXtoBp(evt.pageX));
+                    thisB.createGenomicSubstitution(evt,gcoord-1);
+                }
+            }));
         }
         menu.startup();
         menu.bindDomNode( featDiv );
@@ -512,8 +477,7 @@ return declare( Sequence,
         },evt);
     },
 
-    renderAlterations: function(alterations,leftBase,rightBase,blockNode,scale) {
-        var thisB=this;
+    renderAlterations: function(alterations,leftBase,rightBase,blockNode,thisB) {
         array.forEach(alterations,function(alt) {
             var start=alt.get("start");
             var end=alt.get("end");
@@ -525,71 +489,44 @@ return declare( Sequence,
 
             if(type=="insertion") {
                 featDiv=domConstruct.create("div",{ 
-                    "class": "sequence_alteration insertion",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": "2px",
                         "left": pct+"%",
+                        "backgroundColor": "rgba(0,255,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
-
-                var seqNode = domConstruct.create("table", {
-                    style: {
-                        "width": (alt.get('residues').length+1)*charWidth+"%",
-                        "bottom": "0px",
-                        "position": "absolute"
-                    }
-                }, featDiv);
-
-                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), alt.get('residues'), scale ));
             }
             else if(type=="deletion") {
                 var charWidth=100/(rightBase-leftBase);
                 featDiv=domConstruct.create("div",{ 
-                    "class": "sequence_alteration deletion",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": (end-start)*charWidth+"%",
                         "left": pct+"%",
+                        "backgroundColor": "rgba(255,0,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
-                var seqNode = domConstruct.create("table", {
-                    style: {
-                        width: "100%",
-                        bottom: "0px",
-                        position: "absolute"
-                    }
-                }, featDiv);
-                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), new Array(alt.get('residues').length+1).join('-'), scale ));
             }
             else if(type=="substitution") {
                 var charWidth=100/(rightBase-leftBase);
                 featDiv=domConstruct.create("div",{ 
-                    "class": "sequence_alteration substitution",
                     "style": {
                         "position": "absolute",
                         "z-index": 20,
                         "top": "0px",
                         "width": (end-start)*charWidth+"%",
                         "left": pct+"%",
+                        "backgroundColor": "rgba(255,255,0,0.2)",
                         "height": "100%"
                     }
                 },blockNode);
-
-                var seqNode = domConstruct.create("table", {
-                    style: {
-                        width: "100%",
-                        bottom: "0px",
-                        position: "absolute"
-                    }
-                }, featDiv);
-                seqNode.appendChild( thisB._renderSeqTr( alt.get('start'), alt.get('end'), alt.get('residues'), scale ));
             }
             var refreshMenu = lang.hitch( thisB, '_refreshMenu', featDiv );
             thisB.own( on( featDiv,  'mouseover', refreshMenu ) );
@@ -600,4 +537,3 @@ return declare( Sequence,
  
 });
 });
-
