@@ -104,7 +104,7 @@ return declare([],{
             var maxLength = maxFmax - minFmin;
             // track.featureStore._add_getters(track.attrs.accessors().get, jfeature);
             historyPreviewDiv.featureLayout = new Layout(fmin, fmax);
-            historyPreviewDiv.featureNodes = new Array();
+            historyPreviewDiv.featureNodes = [];
             historyPreviewDiv.startBase = minFmin - (maxLength * 0.1);
             historyPreviewDiv.endBase = maxFmax + (maxLength * 0.1);
             var coords = domGeom.position(historyPreviewDiv);

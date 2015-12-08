@@ -6,7 +6,9 @@ require({
        },
        [],
        function() {
+
 define.amd.jQuery = true;
+
 define([
            'dojo/_base/declare',
            'dojo/_base/lang',
@@ -26,6 +28,7 @@ define([
            'dijit/form/Button',
            'dijit/registry',
            'dijit/place',
+           'jquery',
            'JBrowse/Plugin',
            'WebApollo/FeatureEdgeMatchManager',
            'WebApollo/FeatureSelectionManager',
@@ -58,6 +61,7 @@ define([
             dijitButton,
             registry,
             place,
+            $,
             JBPlugin,
             FeatureEdgeMatchManager,
             FeatureSelectionManager,
@@ -510,7 +514,7 @@ return declare( [JBPlugin, HelpMixin],
         );
         this.updateLabels();
     }
-
+});
 
 });
 

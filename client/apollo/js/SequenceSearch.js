@@ -125,6 +125,17 @@ searchSequence: function(trackName, refSeqName, starts) {
             domStyle.set(waitingDiv, { display: "block"} );
             domStyle.set(matchDiv, { display: "none"} );
             domStyle.set(headerDiv, { display: "none" });
+            var postobj={
+                "track": trackName,
+                "search": {
+                    "key": sequenceToolsSelect.options[sequenceToolsSelect.selectedIndex].id,
+                    "residues": residues.replace(/(\r\n|\n|\r)/gm,"")
+                },
+                "operation": operation
+            };
+            if(!searchAllRefSeqs) {
+                postobj.search.database_id=refSeqName;
+            }
             dojo.xhrPost( {
                 postData: JSON.stringify(postobj),
                 url: contextPath + "/AnnotationEditorService",

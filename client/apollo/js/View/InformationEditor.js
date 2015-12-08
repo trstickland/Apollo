@@ -50,6 +50,9 @@ define( [
 
 var context_path='..';
 return declare([],{
+
+
+       
     getAnnotationInfoEditor: function()  {
         var selected = this.selectionManager.getSelection();
         this.getAnnotationInfoEditorForSelectedFeatures(selected);
@@ -173,7 +176,7 @@ return declare([],{
         var statusDiv = domConstruct.create("div", { 'class': "annotation_info_editor_section" }, content);
         var statusLabel = domConstruct.create("div", { 'class': "annotation_info_editor_section_header", innerHTML: "Status" }, statusDiv);
         var statusFlags = domConstruct.create("div", { 'class': "status" }, statusDiv);
-        var statusRadios = new Object();
+        var statusRadios = {};
 
         if (!hasWritePermission) {
             nameField.set("disabled", true);
@@ -246,7 +249,6 @@ return declare([],{
                 }
             });
         };
-         
         var updateSymbol = function(symbol) {
             symbol = escapeString(symbol);
             var features = [ { "uniquename": uniqueName, "symbol": symbol } ];
@@ -254,7 +256,8 @@ return declare([],{
             var postData = { "track": trackName, "features": features, "operation": operation };
             track.executeUpdateOperation(postData);
             updateTimeLastUpdated();
-        };
+        }; 
+        
         var initSymbol = function(feature) {
             if (feature.symbol) {
                 symbolField.set("value", feature.symbol);
@@ -390,7 +393,7 @@ return declare([],{
         var statusDiv = domConstruct.create("div", { 'class': "annotation_info_editor_section" }, content);
         var statusLabel = domConstruct.create("div", { 'class': "annotation_info_editor_section_header", innerHTML: "Status" }, statusDiv);
         var statusFlags = domConstruct.create("div", { 'class': "status" }, statusDiv);
-        var statusRadios = new Object();
+        var statusRadios = {};
 
         var dbxrefsDiv = domConstruct.create("div", { 'class': "annotation_info_editor_section" }, content);
         var dbxrefsLabel = domConstruct.create("div", { 'class': "annotation_info_editor_section_header", innerHTML: "DBXRefs" }, dbxrefsDiv);
@@ -544,7 +547,14 @@ return declare([],{
                 }
             });
         };
-        
+        var updateSymbol = function(symbol) {
+            symbol = escapeString(symbol);
+            var features = [ { "uniquename": uniqueName, "symbol": symbol } ];
+            var operation = "set_symbol";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        };  
         var initSymbol = function(feature) {
             if (feature.symbol) {
                 symbolField.set("value", feature.symbol);
@@ -585,7 +595,13 @@ return declare([],{
                 dateLastModifiedField.set("value", FormatUtils.formatDate(feature.date_last_modified));
             }
         };
-        
+        var deleteStatus = function() {
+            var features = [ { "uniquename": uniqueName, "status": status } ];
+            var operation = "delete_status";
+            var postData = { "track": trackName, "features": features, "operation": operation };
+            track.executeUpdateOperation(postData);
+            updateTimeLastUpdated();
+        }; 
         var initStatus = function(feature, config) {
             var maxLength = 0;
             var status = config.status;
@@ -723,7 +739,7 @@ return declare([],{
                 });
                 
                 on(deleteDbxrefButton, "onclick", function() {
-                    var toBeDeleted = new Array();
+                    var toBeDeleted = [];
                     var selected = dbxrefTable.selection.getSelected();
                     for (var i = 0; i < selected.length; ++i) {
                         var item = selected[i];
@@ -835,7 +851,7 @@ return declare([],{
                 });
                 
                 on(deleteAttributeButton, "onclick", function() {
-                    var toBeDeleted = new Array();
+                    var toBeDeleted = [];
                     var selected = attributeTable.selection.getSelected();
                     for (var i = 0; i < selected.length; ++i) {
                         var item = selected[i];
@@ -922,7 +938,7 @@ return declare([],{
                 });
                 
                 on(deletePubmedIdButton, "onclick", function() {
-                    var toBeDeleted = new Array();
+                    var toBeDeleted = [];
                     var selected = pubmedIdTable.selection.getSelected();
                     for (var i = 0; i < selected.length; ++i) {
                         var item = selected[i];
@@ -1052,7 +1068,7 @@ return declare([],{
                 });
                 
                 on(deleteGoIdButton, "onclick", function() {
-                    var toBeDeleted = new Array();
+                    var toBeDeleted = [];
                     var selected = goIdTable.selection.getSelected();
                     for (var i = 0; i < selected.length; ++i) {
                         var item = selected[i];
@@ -1139,7 +1155,7 @@ return declare([],{
                 });
                 
                 on(deleteCommentButton, "onclick", function() {
-                    var toBeDeleted = new Array();
+                    var toBeDeleted = [];
                     var selected = commentTable.selection.getSelected();
                     for (var i = 0; i < selected.length; ++i) {
                         var comment = commentTable.store.getValue(selected[i], "comment");

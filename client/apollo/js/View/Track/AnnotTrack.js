@@ -1,89 +1,82 @@
 define([
-        'dojo/_base/declare',
-        'dojo/_base/array',
-        'jquery',
-        'jqueryui/draggable',
-        'jqueryui/droppable',
-        'jqueryui/resizable',
-        'jqueryui/autocomplete',
-        'jqueryui/dialog',
-        'dijit/registry',
-        'dijit/Menu',
-        'dijit/MenuItem',
-        'dijit/MenuSeparator',
-        'dijit/PopupMenuItem',
-        'dijit/form/Button',
-        'dijit/form/DropDownButton',
-        'dijit/DropDownMenu',
-        'dijit/form/ComboBox',
-        'dijit/form/TextBox',
-        'dijit/form/ValidationTextBox',
-        'dijit/form/RadioButton',
-        'dojox/widget/DialogSimple',
-        'dojox/grid/DataGrid',
-        'dojox/grid/cells/dijit',
-        'dojo/data/ItemFileWriteStore',
-        'WebApollo/View/Track/DraggableHTMLFeatures',
-        'WebApollo/FeatureSelectionManager',
-        'WebApollo/JSONUtils',
-        'WebApollo/BioFeatureUtils',
-        'WebApollo/Permission',
-        'WebApollo/SequenceSearch',
-        'WebApollo/EUtils',
-        'WebApollo/SequenceOntologyUtils',
-        'JBrowse/Model/SimpleFeature',
-        'JBrowse/Util',
-        'JBrowse/View/GranularRectLayout',
-        'dojo/request/xhr',
-        'dojox/widget/Standby',
-        'dijit/Tooltip',
-        'WebApollo/FormatUtils',
-        'dijit/form/Select',
-        'dojo/store/Memory',
-        'dojo/data/ObjectStore'
+            'dojo/_base/declare',
+            'dojo/_base/array',
+            'dojo/_base/lang',
+            'dojo/dom-class',
+            'dojo/dom-construct',
+            'dojo/dom-attr',
+            'dojo/dom-style',
+            'dojo/on',
+            'jquery',
+            'jqueryui/droppable',
+            'jqueryui/resizable',
+            'jqueryui/draggable',
+            'dijit/Menu',
+            'dijit/MenuItem',
+            'dijit/MenuSeparator',
+            'dijit/PopupMenuItem',
+            'dijit/form/Button',
+            'dijit/form/DropDownButton',
+            'dijit/registry',
+            'dojox/widget/DialogSimple',
+            'dojo/json',
+            'WebApollo/View/Track/DraggableHTMLFeatures',
+            'WebApollo/View/Track/SequenceTrack',
+            'WebApollo/FeatureSelectionManager',
+            'WebApollo/JSONUtils',
+            'WebApollo/Permission',
+            'WebApollo/SequenceSearch',
+            'WebApollo/SequenceOntologyUtils',
+            'JBrowse/Model/SimpleFeature',
+            'JBrowse/Util', 
+            'JBrowse/View/GranularRectLayout',
+            'dojo/request/xhr',
+            'dojox/widget/Standby',
+            'dijit/Tooltip',
+            'WebApollo/FormatUtils',
+            'WebApollo/View/InformationEditor',
+            'WebApollo/View/History',
+            'WebApollo/View/GetSequence'
     ],
-    function (declare,
-              array,
-              $,
-              draggable,
-              droppable,
-              resizable,
-              autocomplete,
-              dialog,
-              registry,
-              dijitMenu,
-              dijitMenuItem,
-              dijitMenuSeparator,
-              dijitPopupMenuItem,
-              dijitButton,
-              dijitDropDownButton,
-              dijitDropDownMenu,
-              dijitComboBox,
-              dijitTextBox,
-              dijitValidationTextBox,
-              dijitRadioButton,
-              dojoxDialogSimple,
-              dojoxDataGrid,
-              dojoxCells,
-              dojoItemFileWriteStore,
-              DraggableFeatureTrack,
-              FeatureSelectionManager,
-              JSONUtils,
-              BioFeatureUtils,
-              Permission,
-              SequenceSearch,
-              EUtils,
-              SequenceOntologyUtils,
-              SimpleFeature,
-              Util,
-              Layout,
-              xhr,
-              Standby,
-              Tooltip,
-              FormatUtils,
-              Select,
-              Memory,
-              ObjectStore) {
+    function ( declare,
+                array,
+                lang,
+                domClass,
+                domConstruct,
+                domAttr,
+                domStyle,
+                on,
+                $,
+                droppable,
+                resizable,
+                draggable,
+                dijitMenu,
+                dijitMenuItem,
+                dijitMenuSeparator,
+                dijitPopupMenuItem,
+                dijitButton,
+                dijitDropDownButton,
+                registry,
+                dojoxDialogSimple,
+                JSON,
+                DraggableFeatureTrack,
+                SequenceTrack,
+                FeatureSelectionManager,
+                JSONUtils,
+                Permission,
+                SequenceSearch,
+                SequenceOntologyUtils,
+                SimpleFeature,
+                Util,
+                Layout,
+                xhr,
+                Standby,
+                Tooltip,
+                FormatUtils,
+                InformationEditorMixin,
+                HistoryMixin,
+                GetSequenceMixin
+                ) {
 
         var listener;
         var client;
@@ -1485,7 +1478,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var pmin = selfeat.get('start');
             var pmax = selfeat.get('end');
             if ((coordinate - pmax) > 10) {
-                this.centerAtBase(pmin);
+                this.centerAtBase(pmin,selected,selfeat);
             }
             else  {
                 var childfeats = selfeat.children();                
@@ -1505,12 +1498,12 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 // find closest edge right of current coord
                 if (coordDelta != Number.MAX_VALUE)  {
                     var newCenter = coordinate + coordDelta;
-                    this.centerAtBase(newCenter);
+                    this.centerAtBase(newCenter,selected,selfeat);
                 }
             }
         }
     }, 
-    centerAtBase: function(position) {
+    centerAtBase: function(position, selected, selfeat) {
         this.gview.centerAtBase(position, false);
         this.selectionManager.removeFromSelection(selected[0]);
         var subfeats = selfeat.get("subfeatures");
@@ -1555,7 +1548,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
             var pmin = selfeat.get('start');
             var pmax = selfeat.get('end');
             if ((pmin - coordinate) > 10) {
-                this.centerAtBase(pmax);
+                this.centerAtBase(pmax, selected, selfeat);
             }
             else  {
                 var childfeats = selfeat.children();                
@@ -1575,7 +1568,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
                 // find closest edge right of current coord
                 if (coordDelta != Number.MAX_VALUE)  {
                     var newCenter = coordinate - coordDelta;
-                    this.centerAtBase(newCenter);
+                    this.centerAtBase(newCenter,selected,selfeat);
                 }
             }
         }

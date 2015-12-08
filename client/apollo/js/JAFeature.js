@@ -1,11 +1,13 @@
 define([ 'dojo/_base/declare',
          'dojo/_base/array',
-         'JBrowse/Model/SimpleFeature'
+         'JBrowse/Model/SimpleFeature',
+         'WebApollo/JSONUtils'
        ],
        function(
            declare,
            array,
-           SimpleFeature
+           SimpleFeature,
+           JSONUtils
        ) {
 
 
