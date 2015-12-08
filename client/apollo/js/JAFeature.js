@@ -1,13 +1,11 @@
 define([ 'dojo/_base/declare',
          'dojo/_base/array',
-         'JBrowse/Model/SimpleFeature',
-         'WebApollo/JSONUtils'
+         'JBrowse/Model/SimpleFeature'
        ],
        function(
            declare,
            array,
-           SimpleFeature,
-           JSONUtils
+           SimpleFeature
        ) {
 
 
@@ -79,7 +77,7 @@ var JAFeature = declare( SimpleFeature, {
                     var child = afeature.children[i];
                     if (child.children) {
                         for (var j = 0; j < child.children.length; ++j) {
-                            JSONUtils.flattenFeature(child.children[j], descendants);
+                            this.flattenFeature(child.children[j], descendants);
                         }
                     }
                 }
@@ -109,6 +107,16 @@ var JAFeature = declare( SimpleFeature, {
             return this.parent().id();
         }
         return this.id();
+    },
+    flattenFeature: function(feature, descendants) {
+        descendants.push(feature);
+        var i;
+        if (feature.children) {
+            for ( i = 0; i < feature.children.length; ++i) {
+                this.flattenFeature(feature.children[i], descendants);
+            }
+            feature.children = [];
+        }
     }
 });
 

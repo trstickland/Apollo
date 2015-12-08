@@ -517,60 +517,29 @@ class RequestHandlingService {
 
     @Timed
     @Transactional(readOnly = true)
-    JSONObject getFeatures(JSONObject inputObject) {
+    JSONObject getFeatures(String sequenceName) {
+        log.debug "getFeatures ${sequenceName}"
 
-
-        String sequenceName = permissionService.getSequenceNameFromInput(inputObject)
-        Sequence sequence = permissionService.checkPermissions(inputObject, PermissionEnum.READ)
-        if (sequenceName != sequence.name) {
-            sequence = Sequence.findByNameAndOrganism(sequenceName, sequence.organism)
-            preferenceService.setCurrentSequence(permissionService.getCurrentUser(inputObject), sequence)
+        def features = Feature.createCriteria().list() {
+            featureLocations {
+                sequence {
+                    eq('name',sequenceName)
+                }
+            }
+            'in'('class', viewableAnnotationTranscriptList)
         }
-
-        log.debug "getFeatures for organism -> ${sequence.organism.commonName} and ${sequence.name}"
-
-
-
-        List topLevelTranscripts = Transcript.executeQuery("select distinct f , child , childLocation from Transcript f join f.featureLocations fl join f.parentFeatureRelationships pr join pr.childFeature child join child.featureLocations childLocation where fl.sequence = :sequence and f.class in (:viewableAnnotationList)", [sequence: sequence, viewableAnnotationList: viewableAnnotationTranscriptList])
-        Map<Transcript, List<Feature>> transcriptMap = new HashMap<>()
-        Map<Transcript, List<FeatureLocation>> featureLocationMap = new HashMap<>()
-        topLevelTranscripts.each {
-            List<Feature> featureList
-            featureList = transcriptMap.containsKey(it[0]) ? transcriptMap.get(it[0]) : new ArrayList<>()
-            featureList.add(it[1])
-            transcriptMap.put(it[0], featureList)
-
-
-            List<FeatureLocation> featureLocationList
-            featureLocationList = featureLocationMap.containsKey(it[0]) ? featureLocationMap.get(it[0]) : new ArrayList<>()
-            featureLocationList.add(it[2])
-            featureLocationMap.put(it[0], featureLocationList)
-        }
+        log.debug "${features}"
 
         JSONArray jsonFeatures = new JSONArray()
 
-        for (Transcript transcript in transcriptMap.keySet()) {
-            jsonFeatures.put(transcriptService.convertTranscriptToJSON(transcript, transcriptMap.get(transcript), featureLocationMap.get(transcript)))
+        for (Feature feature in features) {
+            jsonFeatures.put(featureService.convertFeatureToJSON(feature))
         }
 
-
-
-        List<Feature> topLevelFeatures = Feature.executeQuery("select distinct f from Feature f join f.featureLocations fl where fl.sequence = :sequence and f.childFeatureRelationships is empty and f.class in (:viewableAnnotationList)", [sequence: sequence, viewableAnnotationList: viewableAnnotationFeatureList])
-        topLevelFeatures.each { feature ->
-            JSONObject jsonObject = featureService.convertFeatureToJSON(feature, false)
-            jsonFeatures.put(jsonObject)
-        }
-
-        inputObject.put(AnnotationEditorController.REST_FEATURES, jsonFeatures)
-        return inputObject
-
+        return [features: jsonFeatures] as JSONObject
     }
 
-    /**
-     * First feature is transcript, and the rest must be exons to add
-     * @param inputObject
-     * @return
-     */
+    
     @Timed
     JSONObject addExon(JSONObject inputObject) {
         JSONArray features = inputObject.getJSONArray(FeatureStringEnum.FEATURES.value)

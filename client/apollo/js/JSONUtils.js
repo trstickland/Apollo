@@ -15,22 +15,14 @@ define([ 'dojo/_base/declare',
        ) {
 
 var JSONUtils;
+
 JSONUtils = {
 
 createJBrowseFeature: function( afeature )  {
     return new JAFeature( afeature );
 },
 
-flattenFeature: function(feature, descendants) {
-    descendants.push(feature);
-    var i;
-    if (feature.children) {
-        for ( i = 0; i < feature.children.length; ++i) {
-            this.flattenFeature(feature.children[i], descendants);
-        }
-        feature.children = [];
-    }
-},
+
 
 
 /**
@@ -256,5 +248,6 @@ createApolloFeature: function( jfeature, specified_type, useName, specified_subt
 };
 
 return JSONUtils;
+
  
 });

@@ -57,23 +57,13 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
         log.debug "bang "
     }
 
-    // Map the operation specified in the URL to a controller
-    def handleOperation(String track, String operation) {
-        JSONObject postObject = findPost()
-        operation = postObject.get(REST_OPERATION)
-        def mappedAction = underscoreToCamelCase(operation)
-        log.debug "handleOperation ${params.controller} ${operation} -> ${mappedAction}"
-        forward action: "${mappedAction}", params: [data: postObject]
-    }
+    
 
     /**
      * @return
      */
     @Timed
     def getUserPermission() {
-        log.debug "getUserPermission ${params.data}"
-        JSONObject returnObject = (JSONObject) JSON.parse(params.data)
-
         String username = SecurityUtils.subject.principal
         int permission = PermissionEnum.NONE.value
         if (username) {
@@ -95,14 +85,10 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             if (permissions.values().size() > 0) {
                 permission = permissions.values().iterator().next();
             }
-            returnObject.put(REST_PERMISSION, permission)
-            returnObject.put(REST_USERNAME, username)
-            render returnObject
+            render ([permission: permission, username: username] as JSON)
         }
         else {
-            def errorMessage = [message:"You must first login before editing"]
-            response.status=401
-            render errorMessage as JSON
+            render text: ([message: "You must first login before editing"] as JSON), status: HttpStatus.UNAUTHORIZED
         }
     }
 
@@ -110,12 +96,10 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
     //TODO: parse permissions
     def getDataAdapters() {
         log.debug "getDataAdapters"
-        JSONObject returnObject = (JSONObject) JSON.parse(params.data)
         def set=configWrapperService.getDataAdapterTools()
 
         def obj=new JsonBuilder( set )
-        def jre=["data_adapters": obj.content]
-        render jre as JSON
+        render (["data_adapters": obj.content] as JSON)
     }
 
     @Timed
@@ -177,15 +161,12 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
 
 
     def getTranslationTable() {
-        log.debug "getTranslationTable"
-        JSONObject returnObject = (JSONObject) JSON.parse(params.data)
         TranslationTable translationTable = SequenceTranslationHandler.getDefaultTranslationTable()
         JSONObject ttable = new JSONObject();
         for (Map.Entry<String, String> t : translationTable.getTranslationTable().entrySet()) {
             ttable.put(t.getKey(), t.getValue());
         }
-        returnObject.put(REST_TRANSLATION_TABLE, ttable);
-        render returnObject
+        render ([features: ttable] as JSON)
     }
 
 
@@ -456,15 +437,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             ,@RestApiParam(name="organism", type="string", paramType = RestApiParamType.QUERY,description = "(optional) Organism ID or common name")
     ] )
     def getFeatures() {
-        JSONObject returnObject = (request.JSON ?: JSON.parse(params.data)) as JSONObject
-        try {
-            permissionService.checkPermissions(returnObject, PermissionEnum.READ)
-            render requestHandlingService.getFeatures(returnObject)
-        } catch (e) {
-            def error = [error: 'problem getting features: ' + e.fillInStackTrace()]
-            render error as JSON
-            log.error(error.error)
-        }
+        render requestHandlingService.getFeatures(params.track)
     }
 
     @Timed
