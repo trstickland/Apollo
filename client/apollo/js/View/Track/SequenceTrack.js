@@ -16,7 +16,7 @@ define( [
     'WebApollo/JSONUtils',
     'WebApollo/Permission',
     'WebApollo/Store/SeqFeature/ScratchPad',
-    'dojo/request/xhr'
+    'dojo/request'
      ],
 function(
     declare,
@@ -36,7 +36,7 @@ function(
     JSONUtils,
     Permission,
     ScratchPad,
-    xhr
+    request
      ) {
 
 return declare( Sequence,
@@ -84,14 +84,12 @@ return declare( Sequence,
     },
     requestDeletion: function(selected)  {
         var features = [{uniquename: selected.id()}];
-        var postData = {
-            "track": this.refSeq.name,
-            "features": features,
-            "operation": "delete_sequence_alteration"
-        };
-        xhr(this.context_path + "/AnnotationEditorService", {
+        request(this.context_path + "/annotationEditor/deleteSequenceAlternation", {
             handleAs: "json",
-            data: JSON.stringify(postData),
+            data: {
+                track: this.refSeq.name,
+                features: features
+            },
             method: "post"
         }).then(function(response) {
             // Success
@@ -329,10 +327,7 @@ return declare( Sequence,
 
         var addSequenceAlteration = function() {
             var ok = true;
-            var inputField;
             var inputField = ((type == "deletion") ? deleteField : plusField);
-            // if (type == "deletion") { inputField = deleteField; }
-            // else  { inputField = plusField; }
             var input = inputField.value.toUpperCase();
             if (input.length == 0) {
                 alert("Input cannot be empty for " + type);
@@ -370,7 +365,7 @@ return declare( Sequence,
                     fmax = gcoord + parseInt(input);
                 }
                 else if (type == "substitution") {
-                    fmax = gcoord + input.length;;
+                    fmax = gcoord + input.length;
                 }
                 if (track.storedFeatureCount(fmin, fmax == fmin ? fmin + 1 : fmax) > 0) {
                     alert("Cannot create overlapping sequence alterations");
@@ -390,14 +385,13 @@ return declare( Sequence,
                         feature.residues= input;
                     }
                     var features = [feature];
-                    var postData = {
-                        "track": track.refSeq.name,
-                        "features": features,
-                        "operation": "add_sequence_alteration"
-                    };
-                    xhr(track.context_path + "/AnnotationEditorService", {
+                    request(track.context_path + "/annotationEditor", {
                         handleAs: "json",
-                        data: JSON.stringify(postData),
+                        data: {
+                            track: track.refSeq.name,
+                            features: features,
+                            operation: "add_sequence_alteration"
+                        },
                         method: "post"
                     }).then(function(response) {
                         // Success
@@ -416,10 +410,13 @@ return declare( Sequence,
     },
     loadTranslationTable: function() {
         var thisB = this;
-        return xhr.post( this.context_path + "/AnnotationEditorService",
+        return request( this.context_path + "/annotationEditor/getTranslationTable",
         {
-            data: JSON.stringify({ "track": this.refSeq.name, "operation": "get_translation_table" }),
-            handleAs: "json"
+            data: {
+                track: this.refSeq.name
+            },
+            handleAs: "json",
+            method: "post"
         }).then(function(response) {
             thisB._codonTable=thisB.generateCodonTable(response.translation_table);
             thisB.changed();
@@ -432,10 +429,12 @@ return declare( Sequence,
     },
     loadSequenceAlterations: function() {
         var track = this;
-        return xhr.post( this.context_path + "/AnnotationEditorService",
-        {
-            data: JSON.stringify({ "track": this.refSeq.name, "operation": "get_sequence_alterations" }),
-            handleAs: "json"
+        return request( this.context_path + "/annotationEditor/getTranslationTable",{
+            data: {
+                track: this.refSeq.name,
+            },
+            handleAs: "json",
+            method: "post"
         }).then(
             function(response) {
                 var responseFeatures = response.features;

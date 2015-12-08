@@ -1931,9 +1931,8 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     initSaveMenu: function()  {
         var track = this;
         var permission = this.webapollo.annotService.permission;
-        xhr.post( context_path + "/AnnotationEditorService", {
-            sync: true,
-            data: JSON.stringify({ "track": track.getUniqueTrackName(), "operation": "get_data_adapters" }),
+        xhr.post( context_path + "/annotationEditor/getDataAdapters", {
+            data: { track: track.getUniqueTrackName() },
             handleAs: "json",
             timeout: 5 * 1000 // Time in milliseconds
         }).then(function(response) { //
@@ -2030,7 +2029,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     },
 
     getUniqueTrackName: function() {
-        return this.name + "-" + this.refSeq.name;
+        return this.refSeq.name;
     },
 
     openDialog: function(title, data, width, height) {

@@ -1,19 +1,19 @@
 define([
-       'dojo/_base/declare',
-       'dojo/_base/lang',
-       'dojo/_base/array',
-       'dojo/request/xhr',
-       'WebApollo/Permission',
-       'WebApollo/JSONUtils'
+           'dojo/_base/declare',
+           'dojo/_base/lang',
+           'dojo/_base/array',
+           'dojo/request',
+           'WebApollo/Permission',
+           'WebApollo/JSONUtils'
        ],
-       function(declare,
+       function(
+           declare,
            lang,
            array,
-           xhr,
+           request,
            Permission,
            JSONUtils
-           )
-       {
+       ) {
 
 return declare(null, {
 
@@ -26,8 +26,8 @@ constructor: function(plugin) {
 
 getPermission: function( trackName ) {
     var thisB = this;
-    return xhr.post(this.context_path + "/AnnotationEditorService", {
-        data: JSON.stringify({ "track": trackName, "operation": "get_user_permission" }),
+    return request(this.context_path + "/annotationEditor/getUserPermission", {
+        data: { "track": trackName },
         handleAs: "json",
         timeout: 5 * 1000 // Time in milliseconds
     });
@@ -100,8 +100,6 @@ createAnnotationChangeListener: function(retryNumber) {
 
 
     client.connect({}, function () {
-
-
         client.subscribe("/topic/AnnotationNotification", function (message) {
             var changeData;
             annotTrack=annotTrack||thisB.webapollo.getAnnotTrack();
@@ -179,9 +177,9 @@ initializeAnnotations: function(annotTrack) {
             annotTrack.login();
         }
     }).then(function() {
-        xhr(thisB.context_path+'/AnnotationEditorService', {
+        request(thisB.context_path+'/annotationEditor/getFeatures', {
             handleAs: "json",
-            data: JSON.stringify({ "track": annotTrack.getUniqueTrackName(), "operation": "get_features" }),
+            data: { track: annotTrack.getUniqueTrackName() },
             method: "post"
         }).then(function(response) {
             var responseFeatures = response.features;
@@ -192,6 +190,7 @@ initializeAnnotations: function(annotTrack) {
             });
             annotTrack.changed();
         }, function(response) {
+            console.log(response);
             console.log("Annotation server error--maybe you forgot to login to the server?");
             annotTrack.handleError({ responseText: response.response.text } );
             return response;

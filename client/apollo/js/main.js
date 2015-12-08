@@ -39,7 +39,7 @@ define([
            'WebApollo/View/TrackList/Faceted',
            'WebApollo/View/Dialog/Help',
            'WebApollo/JSONUtils',
-           'WebApollo/AnnotationEditorServiceAdapter',
+           'WebApollo/LoginAdapter',
            'JBrowse/View/FileDialog/TrackList/GFF3Driver',
            'JBrowse/CodonTable'
        ],
@@ -72,7 +72,7 @@ define([
             Faceted,
             HelpMixin,
             JSONUtils,
-            AnnotService,
+            LoginAdapter,
             GFF3Driver,
             CodonTable
             ) {
@@ -83,7 +83,7 @@ return declare( [JBPlugin, HelpMixin],
         console.log("loaded WebApollo plugin");
         var thisB = this;
         this.searchMenuInitialized = false;
-        this.annotService=new AnnotService(this);
+        this.annotService=new LoginAdapter(this);
 
         var browser = this.browser;  // this.browser set in Plugin superclass constructor
         [
