@@ -866,7 +866,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         if (features.length == 0) {
             return;
         }
-        var postData = { "track": trackName, "features": features, "operation": "delete_feature" };
+        var postData = { "track": trackName, "features": features, "operation": "deleteFeature" };
         track.executeUpdateOperation(postData);
     }, 
 
@@ -2671,10 +2671,12 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
         var browser = this.browser;
         var clabel = this.name+"-collapsed";
         var options = this.inherited(arguments) || [];
+
         options = this.removeItemWithLabel(options, "Pin to top");
         options = this.removeItemWithLabel(options, "Delete track");
         
-        options.push({ label: "Collapsed view",
+        options.push({
+                 label: "collapse_view",
                  title: "Collapsed view",
                  type: 'dijit/CheckedMenuItem',
                  checked: !!('collapsedMode' in thisB ? thisB.collapsedMode : browser.cookie(clabel)=="true"),
@@ -2695,8 +2697,7 @@ var AnnotTrack = declare([DraggableFeatureTrack,InformationEditorMixin,HistoryMi
     },
 
     executeUpdateOperation: function(postData) {
-        console.log("JSON",JSON.stringify(postData));
-        this.webapollo.annotService.client.send("/app/AnnotationNotification", {"content-type":"text/plain"}, JSON.stringify(postData));
+        this.webapollo.annotService.client.send("/app/AnnotationNotification", {"content-type":"text/plain"});
     },
 
     isProteinCoding: function(feature) {

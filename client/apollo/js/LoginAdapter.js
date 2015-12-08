@@ -50,8 +50,8 @@ createAnnotationChangeListener: function(retryNumber) {
 
 
     if(typeof window.parent.getEmbeddedVersion == 'function') {
-        if(window.parent.getEmbeddedVersion()=='ApolloGwt-1.0') {
-            console.log('Registering embedded system with ApolloGwt-1.0.');
+        if(window.parent.getEmbeddedVersion()=='ApolloGwt-2.0') {
+            console.log('Registering embedded system with ApolloGwt-2.0.');
             var sendTracks = function (trackList, visibleTrackNames) {
                 var filteredTrackList = [];
                 for (var trackConfigIndex in trackList) {
