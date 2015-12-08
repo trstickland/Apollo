@@ -141,8 +141,7 @@
         <echo>${jbrowse.download.directory}</echo>
     </target>
 
-    <target name="release" description=""
-            depends="clean,git.clone,copy.apollo.plugin.jbrowse,build.jbrowse,install.jbrowse.perl">
+    <target name="release" description="" depends="clean,git.clone,copy.apollo.plugin.jbrowse,install-version,build.jbrowse">
         <copy file="${jbrowse.download.directory}/JBrowse-${jbrowse.version}.zip" todir="${basedir}"/>
         <exec executable="unzip" failifexecutionfails="false" errorproperty="">
             <arg value="JBrowse-${jbrowse.version}.zip"/>

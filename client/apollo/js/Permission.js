@@ -1,11 +1,11 @@
 define([],
        function() {
 
-return {
-    NONE: 0x0,
-    READ: 0x1,
-    WRITE: 0x2,
-    ADMIN: 0x8
-};
+var Permission = {};
+Permission.NONE= 0x0;
+Permission.READ= 0x1;
+Permission.WRITE= 0x2;
+Permission.ADMIN= 0x8;
+return Permission;
 
 });

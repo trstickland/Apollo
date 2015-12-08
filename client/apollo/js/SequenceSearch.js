@@ -1,17 +1,15 @@
 define( [
             'dojo/_base/declare',
-            'dojo/_base/array',
             'dojo/dom-construct',
+            'dojo/dom-style',
             'dojo/dom-attr',
-            'dojo/dom',
             'jquery'
-], 
-    function( declare,
-        array,
-        domConstruct,
-        domAttr,
-        dom,
-        $ ) {
+        ], 
+        function(declare,
+            domConstruct,
+            domStyle,
+            domAttr,
+            $) {
 
 return declare(null, {
 constructor: function(contextPath) {
@@ -72,12 +70,12 @@ searchSequence: function(trackName, refSeqName, starts) {
     var matchDiv = dojo.create("div", { className: "search_sequence_matches" }, content);
     var matches = dojo.create("div", { }, matchDiv);
 
-    dojo.style(messageDiv, { display: "none" });
-    dojo.style(matchDiv, { display: "none" });
-    dojo.style(headerDiv, { display: "none" });
-    dojo.style(waitingDiv, { display: "none" });
+    domStyle.set(messageDiv, { display: "none" });
+    domStyle.set(matchDiv, { display: "none" });
+    domStyle.set(headerDiv, { display: "none" });
+    domStyle.set(waitingDiv, { display: "none" });
     if (!refSeqName) {
-        dojo.style(searchAllRefSeqsDiv, { display: "none" });
+        domStyle.set(searchAllRefSeqsDiv, { display: "none" });
     }
 
     var getSequenceSearchTools = function() {
@@ -94,20 +92,14 @@ searchSequence: function(trackName, refSeqName, starts) {
             handleAs: "json",
             timeout: 5000 * 1000, // Time in milliseconds
             load: function(response, ioArgs) {
-                if(response.error) {
-                    ok = false;
-                    alert(response.error);
-                }
                 if (response.sequence_search_tools.length == 0) {
                     ok = false;
                     return;
                 }
-                ok = true;
-                for(var key in response.sequence_search_tools) {
-                    if (response.sequence_search_tools.hasOwnProperty(key)) {
-                        dojo.create("option", { innerHTML: response.sequence_search_tools[key].name, id: key }, sequenceToolsSelect);
-                    }
+                for (var i = 0; i < response.sequence_search_tools.length; ++i) {
+                    domConstruct.create("option", { innerHTML: response.sequence_search_tools[i] }, sequenceToolsSelect);
                 }
+                ok = true;
             },
             error: function(response, ioArgs) {
                 errorCallback(response);
@@ -118,7 +110,7 @@ searchSequence: function(trackName, refSeqName, starts) {
     };
     
     var search = function() {
-        var residues = dojo.attr(sequenceField, "value").toUpperCase();
+        var residues = domAttr.get(sequenceField, "value").toUpperCase();
         var ok = true;
         if (residues.length == 0) {
             alert("No sequence entered");
@@ -128,46 +120,30 @@ searchSequence: function(trackName, refSeqName, starts) {
             alert("The sequence should only contain non redundant IUPAC nucleotide or amino acid codes (except for N/X)");
             ok = false;
         }
-        var searchAllRefSeqs = dojo.attr(searchAllRefSeqsCheckbox, "checked");
+        var searchAllRefSeqs = domAttr.get(searchAllRefSeqsCheckbox, "checked");
         if (ok) {
-            dojo.style(waitingDiv, { display: "block"} );
-            dojo.style(matchDiv, { display: "none"} );
-            dojo.style(headerDiv, { display: "none" });
-            var postobj={
-                "track": trackName,
-                "search": {
-                    "key": sequenceToolsSelect.options[sequenceToolsSelect.selectedIndex].id,
-                    "residues": residues.replace(/(\r\n|\n|\r)/gm,"")
-                },
-                "operation": operation
-            };
-            if(!searchAllRefSeqs) {
-                postobj.search.database_id=refSeqName;
-            }
-
+            domStyle.set(waitingDiv, { display: "block"} );
+            domStyle.set(matchDiv, { display: "none"} );
+            domStyle.set(headerDiv, { display: "none" });
             dojo.xhrPost( {
                 postData: JSON.stringify(postobj),
                 url: contextPath + "/AnnotationEditorService",
                 handleAs: "json",
                 timeout: 5000 * 1000, // Time in milliseconds
                 load: function(response, ioArgs) {
-                    dojo.style(waitingDiv, { display: "none"} );
-                    if(response.error) {
-                        alert(response.error);
-                        return;
-                    }
+                    domStyle.set(waitingDiv, { display: "none"} );
                     while (matches.hasChildNodes()) {
                         matches.removeChild(matches.lastChild);
                     }
                     if (response.matches.length == 0) {
-                        dojo.style(messageDiv, { display: "block" });
-                        dojo.style(matchDiv, { display: "none" });
-                        dojo.style(headerDiv, { display: "none" });
+                        domStyle.set(messageDiv, { display: "block" });
+                        domStyle.set(matchDiv, { display: "none" });
+                        domStyle.set(headerDiv, { display: "none" });
                         return;
                     }
-                    dojo.style(messageDiv, { display: "none" });
-                    dojo.style(headerDiv, { display: "block"} );
-                    dojo.style(matchDiv, { display: "block"} );
+                    domStyle.set(messageDiv, { display: "none" });
+                    domStyle.set(headerDiv, { display: "block"} );
+                    domStyle.set(matchDiv, { display: "block"} );
                     
                     var returnedMatches = response.matches;
                     returnedMatches.sort(function(match1, match2) {
@@ -193,13 +169,13 @@ searchSequence: function(trackName, refSeqName, starts) {
                         var rawscore = match.rawscore;
                         var significance = match.significance;
                         var identity = match.identity;
-                        var row = dojo.create("div", { className: "search_sequence_matches_row" }, matches);
-                        var subjectIdColumn = dojo.create("span", { innerHTML: subject.feature.uniquename, className: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
-                        var subjectStartColumn = dojo.create("span", { innerHTML: subjectStart, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-                        var subjectEndColumn = dojo.create("span", { innerHTML: subjectEnd, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-                        var scoreColumn = dojo.create("span", { innerHTML: match.rawscore, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-                        var significanceColumn = dojo.create("span", { innerHTML: match.significance, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
-                        var identityColumn = dojo.create("span", { innerHTML : match.identity, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+                        var row = domConstruct.create("div", { className: "search_sequence_matches_row" + (dojo.isFF ? " search_sequence_matches_row-firefox" : "") }, matches);
+                        var subjectIdColumn = domConstruct.create("span", { innerHTML: subject.feature.uniquename, className: "search_sequence_matches_field search_sequence_matches_generic_field", title: subject.feature.uniquename }, row);
+                        var subjectStartColumn = domConstruct.create("span", { innerHTML: subjectStart, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+                        var subjectEndColumn = domConstruct.create("span", { innerHTML: subjectEnd, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+                        var scoreColumn = domConstruct.create("span", { innerHTML: match.rawscore, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+                        var significanceColumn = domConstruct.create("span", { innerHTML: match.significance, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
+                        var identityColumn = domConstruct.create("span", { innerHTML : match.identity, className: "search_sequence_matches_field search_sequence_matches_generic_field" }, row);
                         dojo.connect(row, "onclick", function(id, fmin, fmax) {
                             return function() {
                                 redirectCallback(id, fmin, fmax);
@@ -225,7 +201,7 @@ searchSequence: function(trackName, refSeqName, starts) {
     });
     dojo.connect(sequenceButton, "onclick", search);
     dojo.connect(searchAllRefSeqsLabel, "onclick", function() {
-        dojo.attr(searchAllRefSeqsCheckbox, "checked", !searchAllRefSeqsCheckbox.checked);
+        domAttr.set(searchAllRefSeqsCheckbox, "checked", !searchAllRefSeqsCheckbox.checked);
     });
 
     if (!getSequenceSearchTools()) {

@@ -6,9 +6,7 @@ require({
        },
        [],
        function() {
-
 define.amd.jQuery = true;
-
 define([
            'dojo/_base/declare',
            'dojo/_base/lang',
@@ -17,7 +15,7 @@ define([
            'dojo/query',
            'dojo/_base/window',
            'dojo/_base/array',
-           'dijit/registry',
+           'dojo/request/xhr',
            'dijit/Menu',
            'dijit/MenuItem',
            'dijit/MenuSeparator',
@@ -26,20 +24,21 @@ define([
            'dijit/form/DropDownButton',
            'dijit/DropDownMenu',
            'dijit/form/Button',
+           'dijit/registry',
+           'dijit/place',
            'JBrowse/Plugin',
            'WebApollo/FeatureEdgeMatchManager',
            'WebApollo/FeatureSelectionManager',
            'WebApollo/TrackConfigTransformer',
            'WebApollo/View/Track/AnnotTrack',
+           'WebApollo/View/Track/SequenceTrack',
            'WebApollo/View/TrackList/Hierarchical',
            'WebApollo/View/TrackList/Faceted',
-           'WebApollo/InformationEditor',
            'WebApollo/View/Dialog/Help',
+           'WebApollo/JSONUtils',
+           'WebApollo/AnnotationEditorServiceAdapter',
            'JBrowse/View/FileDialog/TrackList/GFF3Driver',
-           'JBrowse/CodonTable',
-           'dojo/io-query',
-           'jquery',
-           'lazyload/lazyload'
+           'JBrowse/CodonTable'
        ],
     function( declare,
             lang,
@@ -48,7 +47,7 @@ define([
             query,
             win,
             array,
-            dijitRegistry,
+            xhr,
             dijitMenu,
             dijitMenuItem,
             dijitMenuSeparator,
@@ -57,28 +56,31 @@ define([
             dijitDropDownButton,
             dijitDropDownMenu,
             dijitButton,
+            registry,
+            place,
             JBPlugin,
             FeatureEdgeMatchManager,
             FeatureSelectionManager,
             TrackConfigTransformer,
             AnnotTrack,
+            SequenceTrack,
             Hierarchical,
             Faceted,
-            InformationEditor,
             HelpMixin,
+            JSONUtils,
+            AnnotService,
             GFF3Driver,
-            CodonTable,
-            ioQuery,
-            $,
-            LazyLoad ) {
+            CodonTable
+            ) {
 
 return declare( [JBPlugin, HelpMixin],
 {
-
     constructor: function( args ) {
         console.log("loaded WebApollo plugin");
         var thisB = this;
         this.searchMenuInitialized = false;
+        this.annotService=new AnnotService(this);
+
         var browser = this.browser;  // this.browser set in Plugin superclass constructor
         [
           'plugins/WebApollo/jslib/bbop/bbop.js',
@@ -94,26 +96,17 @@ return declare( [JBPlugin, HelpMixin],
         });
 
         // Checking for cookie for determining the color scheme of WebApollo
-        if (browser.cookie("Scheme")=="Dark") {
+        if( browser.cookie("Scheme")=="Dark" ) {
             domClass.add(win.body(), "Dark");
         }
-        if (browser.cookie("colorCdsByFrame")=="true") {
+        if( browser.cookie("colorCdsByFrame")=="true" ) {
             domClass.add(win.body(), "colorCds");
         }
-        if (browser.config.favicon) {
-            // this.setFavicon("plugins/WebApollo/img/webapollo_favicon.ico");
+        if( browser.config.favicon ) {
             this.setFavicon(browser.config.favicon);
         }
-        var queryParams=ioQuery.queryToObject( window.location.search.slice(1) );
+        
 
-        if(queryParams.organism) {
-            this.organism=queryParams.organism;
-        }
-
-        args.cssLoaded.then( function() {
-            if (! browser.config.view) { browser.config.view = {}; }
-            browser.config.view.maxPxPerBp = thisB.getSequenceCharacterSize().width;
-        } );
 
         if (! browser.config.helpUrl)  {
             browser.config.helpUrl = "http://genomearchitect.org/webapollo/docs/help.html";
@@ -140,8 +133,8 @@ return declare( [JBPlugin, HelpMixin],
             browser.config.quickHelp = {
                 "title": "Apollo Help",
                 "content": this.defaultHelp()
-            }
-        };
+            };
+        }
 
         // register the WebApollo track types with the browser, so
         // that the open-file dialog and other things will have them
@@ -172,21 +165,18 @@ return declare( [JBPlugin, HelpMixin],
         //
         array.forEach(browser.config.tracks,function(e) { thisB.trackTransformer.transform(e); });
 
-        // update track selector to WebApollo's if needed
-        // if no track selector set, use WebApollo's Hierarchical selector
+        // update track selector to WebApollo
         if (!browser.config.trackSelector) {
             browser.config.trackSelector = { type: 'WebApollo/View/TrackList/Hierarchical' };
         }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
         else if (browser.config.trackSelector.type == "Hierarchical") {
             browser.config.trackSelector.type = 'WebApollo/View/TrackList/Hierarchical';
         }
-        // if using JBrowse's Hierarchical selector, switch to WebApollo's
         else if (browser.config.trackSelector.type == "Faceted") {
             browser.config.trackSelector.type = 'WebApollo/View/TrackList/Faceted';
         }
 
-
+        //pre-initView createMenu
         if(browser.config.show_nav&&browser.config.show_menu) {
             this.createMenus();
         }
@@ -195,7 +185,6 @@ return declare( [JBPlugin, HelpMixin],
         // put the WebApollo logo in the powered_by place in the main JBrowse bar
         browser.afterMilestone( 'initView', function() {
             if (browser.poweredByLink)  {
-                dojo.disconnect(browser.poweredBy_clickHandle);
                 browser.poweredByLink.innerHTML = '<img src=\"plugins/WebApollo/img/ApolloLogo_100x36.png\" height=\"25\" />';
                 browser.poweredByLink.href = 'http://genomearchitect.org/';
                 browser.poweredByLink.target = "_blank";
@@ -211,44 +200,8 @@ return declare( [JBPlugin, HelpMixin],
                 thisB.postCreateMenus();
             }
 
-
-
-            // Initialize information editor with similar style to track selector
-            var view = browser.view;
-            view.oldOnResize = view.onResize;
-
-             /* trying to fix residues rendering bug when web browser scaling/zoom (Cmd+, Cmd-) is used
-              *    bug appears in Chrome, not Firefox, unsure of other browsers
-              */
-            view.onResize = function() {
-                var fullZoom = (view.pxPerBp >= view.maxPxPerBp);
-                var centerBp = Math.round((view.minVisible() + view.maxVisible())/2);
-                var oldCharSize = thisB.getSequenceCharacterSize();
-                var newCharSize = thisB.getSequenceCharacterSize(true);
-                // detect if something happened to change pixel size of residues font (likely a web browser zoom)
-                var charWidthChanged = (newCharSize.width != oldCharSize.width);
-                var charWidth = newCharSize.width;
-                if (charWidthChanged) {
-                    if (! browser.config.view) { browser.config.view = {}; }
-                    browser.config.view.maxPxPerBp = charWidth;
-                    view.maxPxPerBp = charWidth;
-                }
-                if (charWidthChanged && fullZoom) {
-                    view.pxPerBp = view.maxPxPerBp;
-                    view.oldOnResize();
-                    thisB.browserZoomFix(centerBp);
-                }
-                else  {
-                    view.oldOnResize();
-                }
-            };
-
-
-
-
         });
         this.monkeyPatchRegexPlugin();
-
 
     },
     updateLabels: function() {
@@ -259,62 +212,6 @@ return declare( [JBPlugin, HelpMixin],
             query('.track-label').style('visibility','visible');
         }
         this.browser.view.updateScroll();
-    },
-
-    /**
-     *  Hack to try and fix residues rendering bug when web browser scaling/zoom (Cmd+, Cmd-) is used
-     *    bug appears in Chrome, not Firefox, unsure of other browsers
-     *    based on GenomeView.zoomToBaseLevel(), GenomeView.updateZoom(), then stripping away unneeded
-    */
-    browserZoomFix: function(pos) {
-        var view = this.browser.view;
-        if (view.animation) return;
-        var baseZoomIndex = view.zoomLevels.length - 1;
-        var zoomLoc = 0.5;
-        view.showWait();
-        view.trimVertical();
-        var relativeScale = view.zoomLevels[baseZoomIndex] / view.pxPerBp;
-        var fixedBp = pos;
-        view.curZoom = baseZoomIndex;
-        view.pxPerBp = view.zoomLevels[baseZoomIndex];
-        view.maxLeft = (view.pxPerBp * view.ref.end) - view.getWidth();
-
-        // needed, otherwise Density track can render wrong
-        //    possibly would have problems with other Canvas-based tracks too, though haven't seen in XYPlot yet
-        for (var track = 0; track < view.tracks.length; track++)
-            view.tracks[track].startZoom(view.pxPerBp,
-                                         fixedBp - ((zoomLoc * view.getWidth())
-                                                    / view.pxPerBp),
-                                         fixedBp + (((1 - zoomLoc) * view.getWidth())
-                                                    / view.pxPerBp));
-
-        var eWidth = view.elem.clientWidth;
-        var centerPx = view.bpToPx(fixedBp) - (zoomLoc * eWidth) + (eWidth / 2);
-        // stripeWidth: pixels per block
-        view.stripeWidth = view.stripeWidthForZoom(view.curZoom);
-        view.scrollContainer.style.width =
-            (view.stripeCount * view.stripeWidth) + "px";
-        view.zoomContainer.style.width =
-            (view.stripeCount * view.stripeWidth) + "px";
-        var centerStripe = Math.round(centerPx / view.stripeWidth);
-        var firstStripe = (centerStripe - ((view.stripeCount) / 2)) | 0;
-        view.offset = firstStripe * view.stripeWidth;
-        view.maxOffset = view.bpToPx(view.ref.end+1) - view.stripeCount * view.stripeWidth;
-        view.maxLeft = view.bpToPx(view.ref.end+1) - view.getWidth();
-        view.minLeft = view.bpToPx(view.ref.start);
-        view.zoomContainer.style.left = "0px";
-        view.setX((centerPx - view.offset) - (eWidth / 2));
-        dojo.forEach(view.uiTracks, function(track) { track.clear(); });
-
-        // needed, otherwise Density track can render wrong
-        //    possibly would have problems with other Canvas-based tracks too, though haven't seen in XYPlot yet
-        view.trackIterate( function(track) {
-            track.endZoom( view.pxPerBp,Math.round(view.stripeWidth / view.pxPerBp));
-        });
-
-        view.showVisibleBlocks(true);
-        view.showDone();
-        view.showCoarse();
     },
 
     plusStrandFilter: function(feature)  {
@@ -364,30 +261,25 @@ return declare( [JBPlugin, HelpMixin],
     },
 
     initSearchMenu: function()  {
-        if (! this.searchMenuInitialized) {
-            var webapollo = this;
-            this.browser.addGlobalMenuItem( 'tools',
-                                            new dijitMenuItem(
-                                                {
-                                                    id: 'menubar_apollo_seqsearch',
-                                                    label: "Search sequence",
-                                                    onClick: function() {
-                                                        webapollo.getAnnotTrack().searchSequence();
-                                                    }
-                                                }) );
-            if(!dijitRegistry.byId("dropdownmenu_tools")){
-                this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
-            }
-
-        }
+        var thisB = this;
+        this.browser.addGlobalMenuItem( 'tools',
+            new dijitMenuItem(
+                {
+                    id: 'menubar_apollo_seqsearch',
+                    label: "Search sequence",
+                    onClick: function() {
+                        thisB.getAnnotTrack().searchSequence();
+                    }
+                })
+        );
+        this.browser.renderGlobalMenu( 'tools', {text: 'Tools'}, this.browser.menuBar );
 
         // move Tool menu in front of Help menu
-        var toolsMenu = dijit.byId('dropdownbutton_tools');
-        var helpMenu = dijit.byId('dropdownbutton_help');
+        var toolsMenu = registry.byId('dropdownbutton_tools');
+        var helpMenu = registry.byId('dropdownbutton_help');
         domConstruct.place(toolsMenu.domNode,helpMenu.domNode,'before');
         this.searchMenuInitialized = true;
     },
-
 
     initLoginMenu: function(username) {
         var webapollo = this;
@@ -434,99 +326,35 @@ return declare( [JBPlugin, HelpMixin],
         this.browser.menuBar.appendChild( loginButton.domNode );
         this.loginMenuInitialized = true;
     },
-
-    /**
-     *  get the GenomeView's user annotation track
-     *  WebApollo assumes there is only one AnnotTrack
-     *     if there are multiple AnnotTracks, getAnnotTrack returns first one found
-     *         iterating through tracks list
-     */
     getAnnotTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
-            var tracks = this.browser.view.tracks;
-            for (var i = 0; i < tracks.length; i++)  {
-                // should be doing instanceof here, but class setup is not being cooperative
-                if (tracks[i].isWebApolloAnnotTrack)  {
-                    return tracks[i];
+            var a;
+            array.some(this.browser.view.tracks,function(track) {
+                if(track.isInstanceOf(AnnotTrack))  {
+                    a=track;
+                    return true;
                 }
-            }
+            });
+            return a;
         }
         return null;
     },
 
-    /**
-     *  get the GenomeView's sequence track
-     *  WebApollo assumes there is only one SequenceTrack
-     *     if there are multiple SequenceTracks, getSequenceTrack returns first one found
-     *         iterating through tracks list
-     */
     getSequenceTrack: function()  {
         if (this.browser && this.browser.view && this.browser.view.tracks)  {
-            var tracks = this.browser.view.tracks;
-            for (var i = 0; i < tracks.length; i++)  {
-                // should be doing instanceof here, but class setup is not being cooperative
-                if (tracks[i].isWebApolloSequenceTrack)  {
-                    return tracks[i];
+            var a;
+            array.some(this.browser.view.tracks,function(track) {
+                if (track.isInstanceOf(SequenceTrack))  {
+                    a=track;
+                    return true;
                 }
-            }
+            });
+            return a;
         }
         return null;
     },
 
-
-    /** ported from berkeleybop/jbrowse GenomeView.js
-      * returns char height/width on GenomeView
-      */
-    getSequenceCharacterSize: function(recalc)  {
-        var container = this.browser.container;
-        if (this.browser.view && this.browser.view.elem)  {
-            container = this.browser.view.elem;
-        }
-        if (recalc || (! this._charSize))  {
-            //            this._charSize = this.calculateSequenceCharacterSize(this.browser.view.elem);
-            this._charSize = this.calculateSequenceCharacterSize(container);
-        }
-        return this._charSize;
-    },
-
-    /**
-     * ported from berkeleybop/jbrowse GenomeView.js
-     * Conducts a test with DOM elements to measure sequence text width
-     * and height.
-     */
-    calculateSequenceCharacterSize: function( containerElement ) {
-        var widthTest = document.createElement("div");
-        widthTest.className = "wa-sequence";
-        widthTest.style.visibility = "hidden";
-        var widthText = "12345678901234567890123456789012345678901234567890";
-        widthTest.appendChild(document.createTextNode(widthText));
-        containerElement.appendChild(widthTest);
-
-        var result = {
-            width:  widthTest.clientWidth / widthText.length,
-            height: widthTest.clientHeight
-        };
-
-        containerElement.removeChild(widthTest);
-        return result;
-    },
-
-    /** utility function, given an array with objects that have label props,
-     *        return array with all objects that don't have label
-     *   D = [ { label: A }, { label: B}, { label: C } ]
-     *   E = D.removeItemWithLabel("B");
-     *   E ==> [ { label: A }, { label: C } ]
-     */
-    removeItemWithLabel: function(inarray, label) {
-        var outarray = [];
-        for (var i=0; i<inarray.length; i++) {
-            var obj = inarray[i];
-            if (! (obj.label && (obj.label === label))) {
-                outarray.push(obj);
-            }
-        }
-        return outarray;
-    },
+    
 
     setFavicon: function(favurl) {
         var $head = $('head');
@@ -550,6 +378,7 @@ return declare( [JBPlugin, HelpMixin],
         $head.prepend(favicon1);
         $head.prepend(favicon2);
     },
+
     monkeyPatchRegexPlugin: function() {
         //use var to avoid optimizer
         var plugin='RegexSequenceSearch/Store/SeqFeature/RegexSearch';
@@ -560,6 +389,7 @@ return declare( [JBPlugin, HelpMixin],
                     slicedSeq = slicedSeq.slice( 0, Math.floor( slicedSeq.length / 3 ) * 3);
 
                     var translated = "";
+                    var i,nextCodon;
                     var codontable=new CodonTable();
                     var codons=codontable.generateCodonTable(codontable.defaultCodonTable);
                     for(var i = 0; i < slicedSeq.length; i += 3) {
@@ -572,20 +402,22 @@ return declare( [JBPlugin, HelpMixin],
             });
         });
     },
-    // createMenus adds new menu items and is run before the initView milestone
+
     createMenus: function() {
         var browser=this.browser;
         var thisB=this;
-
-
-                // add a global menu option for setting CDS color
+        
+        // add a global menu option for setting CDS color
         var cds_frame_toggle = new dijitCheckedMenuItem(
                 {
                     label: "Color by CDS frame",
                     checked: browser.cookie("colorCdsByFrame")=="true",
                     onClick: function(event) {
-                        if(this.get("checked")) domClass.add(win.body(), "colorCds");
-                        else domClass.remove(win.body(),"colorCds");
+                        if(this.get("checked")) {
+                            domClass.add(win.body(), "colorCds");
+                        } else {
+                            domClass.remove(win.body(),"colorCds");
+                        }
                         browser.cookie("colorCdsByFrame", this.get("checked")?"true":"false");
                     }
                 });
@@ -625,8 +457,7 @@ return declare( [JBPlugin, HelpMixin],
 
         this.addStrandFilterOptions();
 
-
-        this._showLabels=(browser.cookie("showTrackLabel")||"true")=="true"
+        this._showLabels=(browser.cookie("showTrackLabel")||"true")=="true";
         var hide_track_label_toggle = new dijitCheckedMenuItem(
             {
                 label: "Show track label",
@@ -640,13 +471,10 @@ return declare( [JBPlugin, HelpMixin],
         browser.addGlobalMenuItem( 'view', hide_track_label_toggle);
         browser.addGlobalMenuItem( 'view', new dijitMenuSeparator());
         browser.subscribe('/jbrowse/v1/n/tracks/visibleChanged', dojo.hitch(this,"updateLabels"));
-
-
     },
-    // postCreateMenu is run after initView for convenience of ordering new items
     postCreateMenus: function() {
         var browser=this.browser;
-        var help=dijit.byId("menubar_generalhelp");
+        var help=registry.byId("menubar_generalhelp");
 
         help.set("label", "Apollo Help");
         help.set("iconClass", null);
@@ -666,7 +494,7 @@ return declare( [JBPlugin, HelpMixin],
                     id: 'menubar_web_service_api',
                     label: 'Web Service API',
                     // iconClass: 'jbrowseIconHelp',
-                    onClick: function()  { window.open("web_services/api",'help_window').focus(); }
+                    onClick: function()  { window.open("../web_services/web_service_api.html",'help_window').focus(); }
                 })
         );
         browser.addGlobalMenuItem( 'help',
@@ -683,8 +511,6 @@ return declare( [JBPlugin, HelpMixin],
         this.updateLabels();
     }
 
-
-});
 
 });
 

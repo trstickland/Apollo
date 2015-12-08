@@ -2,25 +2,30 @@
   "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Jasmine Spec Runner</title>
 
-  <!-- jasmine, dojo, etc... -->
   <link rel="shortcut icon" type="image/png" href="lib/jasmine-1.2.0/jasmine_favicon.png">
   <link rel="stylesheet" type="text/css" href="lib/jasmine-1.2.0/jasmine.css">
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine.js"></script>
   <script type="text/javascript" src="lib/jasmine-1.2.0/jasmine-html.js"></script>
-  <script type="text/javascript" src="../../../../src/dojo/dojo.js" data-dojo-config="isDebug: 0, async: 1" ></script>
 
-  <!-- source files -->
-  <script type="text/javascript" src="../../js/JSONUtils.js"></script> 
-  <script type="text/javascript" src="../../js/GFF3toJbrowseJson.js"></script> 
-
-  <!-- include spec files here... -->
-  <script type="text/javascript" src="spec/GFF3toJbrowseJsonSpec.js"></script>
-  <script type="text/javascript" src="spec/JSONUtilsSpec.js"></script>
+  <!-- include source files here... -->
+  <script type="text/javascript" src="../../../../src/dojo/dojo.js" data-dojo-config="async: 1" ></script>
 
   <script type="text/javascript">
-    (function() {
+    require( { baseUrl: '../../../../src',
+               packages: [ 'dojo', 'dijit', 'dojox', 'jszlib',
+                            { name: 'lazyload',  main: 'lazyload' },
+                            'dgrid', 'xstyle', 'put-selector',
+                            { name: 'jDataView', location: 'jDataView/src', main: 'jdataview' },
+                            { name: 'WebApollo', location: '../plugins/WebApollo/js' },
+                            'JBrowse'
+                         ]
+              },
+              ['dojo/ready','JBrowse/Browser'],
+              function( ready,Browser ) {
+
       var jasmineEnv = jasmine.getEnv();
       jasmineEnv.updateInterval = 1000;
 
@@ -31,22 +36,16 @@
       jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
       };
-
-      var currentWindowOnload = window.onload;
-
-      window.onload = function() {
-        if (currentWindowOnload) {
-          currentWindowOnload();
-        }
-        execJasmine();
-      };
-
+      ready( function() {execJasmine();});
       function execJasmine() {
         jasmineEnv.execute();
       }
-
-    })();
+    });
   </script>
+
+  <!-- include spec files here... -->
+  <script type="text/javascript" src="spec/JSONUtilsSpec.js"></script>
+
 
 </head>
 
