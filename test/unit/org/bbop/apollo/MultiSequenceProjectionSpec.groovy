@@ -973,5 +973,149 @@ class MultiSequenceProjectionSpec extends Specification {
         assert inputSequence.substring(23+offset,27+offset)==projectedSequence.substring(0,4)
     }
 
+    void "adding another multi-scaffold test"(){
+
+        given: "a projection"
+        ProjectionSequence sequence1 = new ProjectionSequence(
+                id: 1
+                ,name: "Sequence1"
+                ,organism: "Human"
+                ,order: 0
+                ,unprojectedLength: 1500
+                ,originalOffset: 0
+        )// from 0-99
+        ProjectionSequence sequence2 = new ProjectionSequence(
+                id: 2
+                ,name: "Sequence2"
+                ,organism: "Human"
+                ,order: 1
+                ,unprojectedLength: 500
+                ,originalOffset: 1500
+        ) // from 100-200
+        ProjectionSequence sequence3 = new ProjectionSequence(
+                id: 3
+                ,name: "Sequence3"
+                ,organism: "Human"
+                ,order: 2
+                ,unprojectedLength: 1000
+                ,originalOffset: 2000
+        ) // from 100-200
+        ProjectionDescription projectionDescription = new ProjectionDescription(
+                referenceTrack: []
+                ,sequenceList: [sequence1,sequence2,sequence3]
+                , projection: "exon" // probably ignored here
+                ,padding: 0
+        )
+        MultiSequenceProjection multiSequenceProjection = new MultiSequenceProjection(projectionDescription: projectionDescription)
+
+
+
+        when: "we create some intervals for a few scaffolds"
+        multiSequenceProjection.addLocation(new Location( min: 50,max: 100,sequence: sequence1 ))
+        multiSequenceProjection.addLocation(new Location( min: 800,max: 900,sequence: sequence1 ))
+        multiSequenceProjection.addLocation(new Location( min: 30,max: 130,sequence: sequence2))
+        multiSequenceProjection.addLocation(new Location( min: 200,max: 300,sequence: sequence2))
+        multiSequenceProjection.addLocation(new Location( min: 100,max: 200,sequence: sequence3))
+        multiSequenceProjection.addLocation(new Location( min: 350  ,max: 450,sequence: sequence3))
+        multiSequenceProjection.calculateOffsets()
+        List<Coordinate> coordinateCollection = multiSequenceProjection.listCoordinates()
+        List<ProjectionSequence> projectionSequenceList = multiSequenceProjection.sequenceDiscontinuousProjectionMap.keySet() as List<ProjectionSequence>
+
+        then: "we should get a single projection of size 4"
+        assert multiSequenceProjection.size()==6
+        coordinateCollection.get(0).min==50
+        coordinateCollection.get(0).max==100
+        coordinateCollection.get(1).min==800
+        coordinateCollection.get(1).max==900
+        coordinateCollection.get(2).min==30
+        coordinateCollection.get(2).max==130
+        coordinateCollection.get(3).min==200
+        coordinateCollection.get(3).max==300
+        coordinateCollection.get(4).min==100
+        coordinateCollection.get(4).max==200
+        coordinateCollection.get(5).min==350
+        coordinateCollection.get(5).max==450
+        assert 0==projectionSequenceList.get(0).offset
+        assert 151==multiSequenceProjection.sequenceDiscontinuousProjectionMap.get(projectionSequenceList.get(0)).bufferedLength
+        assert 152==projectionSequenceList.get(1).offset
+        assert 201==multiSequenceProjection.sequenceDiscontinuousProjectionMap.get(projectionSequenceList.get(1)).bufferedLength
+        assert sequence1.name==multiSequenceProjection.getProjectionSequence(200).name
+        assert sequence1.name==multiSequenceProjection.getProjectionSequence(950).name
+        assert sequence2.name==multiSequenceProjection.getProjectionSequence(1700).name
+        assert sequence2.name==multiSequenceProjection.getProjectionSequence(1900).name
+        assert sequence3.name==multiSequenceProjection.getProjectionSequence(2100).name
+        assert sequence3.name==multiSequenceProjection.getProjectionSequence(2400).name
+        assert null==multiSequenceProjection.getProjectionSequence(3001)
+
+        assert 0==multiSequenceProjection.projectValue(50)
+        assert 50==multiSequenceProjection.projectValue(100)
+        assert 51==multiSequenceProjection.projectValue(800)
+        assert 151==multiSequenceProjection.projectValue(900)
+        assert 152==multiSequenceProjection.projectValue(sequence1.unprojectedLength+30)
+        assert 252==multiSequenceProjection.projectValue(sequence1.unprojectedLength+130)
+        assert 253==multiSequenceProjection.projectValue(sequence1.unprojectedLength+200)
+        assert 353==multiSequenceProjection.projectValue(sequence1.unprojectedLength+300)
+
+
+        assert 50==multiSequenceProjection.projectReverseValue(0)
+        assert 100==multiSequenceProjection.projectReverseValue(50)
+        assert 800==multiSequenceProjection.projectReverseValue(51)
+        assert 900==multiSequenceProjection.projectReverseValue(151)
+        assert sequence1.unprojectedLength+30==multiSequenceProjection.projectReverseValue(152)
+        assert sequence1.unprojectedLength+130==multiSequenceProjection.projectReverseValue(252)
+
+        when: "we project a sequence through these coordinates"
+        // length should be 200
+        String aString = new String().padLeft(1500,"ATGC")
+        String bString = new String().padLeft(500,"TAGC")
+        String cString = new String().padLeft(1000,"CAGT")
+        String inputSequence = aString + bString + cString
+        Integer unprojectedMin = multiSequenceProjection.projectReverseValue(0)
+        Integer unprojectedMax = multiSequenceProjection.projectReverseValue(250)
+        String projectedSequence = multiSequenceProjection.projectSequence(inputSequence,unprojectedMin,unprojectedMax,0)
+        Integer offset = multiSequenceProjection.projectedSequences.first().unprojectedLength
+
+        then: "we should confirm that both the input and retrieved sequence are correct"
+        assert 3000==inputSequence.length()
+        assert 101 * 4 + 50 + 1 ==projectedSequence.length()
+        assert 1500==offset
+        assert unprojectedMin==50
+        // TODO: fix the unprojected values
+        assert unprojectedMax==1500 + 1 + 100
+//        assert inputSequence.substring(10,12)==projectedSequence.substring(0,2)
+//        assert inputSequence.substring(22,25)==projectedSequence.substring(3,6)
+//        assert inputSequence.substring(23+offset,27+offset)==projectedSequence.substring(7,11)
+//        assert inputSequence.substring(60+offset,63+offset)==projectedSequence.substring(12,15)
+
+        when: "did more projections"
+        // length should be 200
+        unprojectedMin = multiSequenceProjection.projectReverseValue(25)
+        unprojectedMax = multiSequenceProjection.projectReverseValue(125)
+        projectedSequence = multiSequenceProjection.projectSequence(inputSequence,unprojectedMin,unprojectedMax,0)
+
+        then: "we should confirm that both the input and retrieved sequence are correct"
+        assert unprojectedMin==200
+        assert unprojectedMax==1700
+
+        when: "we look at 200-300"
+        // length should be 200
+        unprojectedMin = multiSequenceProjection.projectReverseValue(200)
+        unprojectedMax = multiSequenceProjection.projectReverseValue(300)
+        projectedSequence = multiSequenceProjection.projectSequence(inputSequence,unprojectedMin,unprojectedMax,0)
+
+        then: "we should confirm that both the input and retrieved sequence are correct"
+        assert unprojectedMin==1800
+        assert unprojectedMax==3000
+
+        when: "we look at 100-200"
+        // length should be 200
+        unprojectedMin = multiSequenceProjection.projectReverseValue(100)
+        unprojectedMax = multiSequenceProjection.projectReverseValue(200)
+        projectedSequence = multiSequenceProjection.projectSequence(inputSequence,unprojectedMin,unprojectedMax,0)
+
+        then: "we should confirm that both the input and retrieved sequence are correct"
+        assert unprojectedMin==1600
+        assert unprojectedMax==1800
+    }
 
 }
