@@ -25,14 +25,14 @@ class MultiSequenceProjection extends AbstractProjection {
 
     List<ProjectionSequence> getReverseProjectionSequences(Integer minInput, Integer maxInput) {
         List<ProjectionSequence> orderedSequences = []
-        Integer startOrder  = getReverseProjectionSequence(minInput)?.order
+        Integer startOrder = getReverseProjectionSequence(minInput)?.order
         Integer endOrder = getReverseProjectionSequence(maxInput)?.order
-        if(endOrder==null ){
+        if (endOrder == null) {
             endOrder = getLastSequence().order
         }
 
         for (ProjectionSequence projectionSequence in sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order }) {
-            if(projectionSequence.order>=startOrder && projectionSequence.order <= endOrder){
+            if (projectionSequence.order >= startOrder && projectionSequence.order <= endOrder) {
                 orderedSequences << projectionSequence
             }
         }
@@ -42,6 +42,7 @@ class MultiSequenceProjection extends AbstractProjection {
 
     /**
      * Find which sequence I am on by iterating over coordinates
+     * This looks in unprojected space
      * @param input
      * @return
      */
@@ -51,10 +52,11 @@ class MultiSequenceProjection extends AbstractProjection {
         // should deliver these in order
         for (projectionSequence in sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order }) {
             DiscontinuousProjection projection = sequenceDiscontinuousProjectionMap.get(projectionSequence)
-            if (input >= offset && input <= projection.originalLength + offset) {
+//            if (input >= offset && input <= projection.originalLength + offset) {
+            if (input >= offset && input <= projectionSequence.unprojectedLength + offset) {
                 return projectionSequence
             }
-            offset += projection.originalLength
+            offset += projectionSequence.unprojectedLength
         }
         return null
     }
@@ -99,16 +101,24 @@ class MultiSequenceProjection extends AbstractProjection {
     String projectSequence(String inputSequence, Integer minCoordinate, Integer maxCoordinate, Integer offset) {
         Integer index = minCoordinate
         List<String> sequenceList = []
+        Integer scaffoldBuffer = 0
 
         // we start at the very bottom and go up
-        for(ProjectionSequence projectionSequence in sequenceDiscontinuousProjectionMap.keySet().sort(){a,b -> a.order<=>b.order }){
+        for (ProjectionSequence projectionSequence in sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order }) {
             DiscontinuousProjection discontinuousProjection = sequenceDiscontinuousProjectionMap.get(projectionSequence)
-            Integer projectionLength = discontinuousProjection.originalLength
-            Integer max = projectionLength > maxCoordinate ? maxCoordinate : projectionLength
-            if(index < projectionLength){
-                sequenceList << discontinuousProjection.projectSequence(inputSequence,index-index, max,offset)
-            }
-            index += projectionLength
+            Integer unprojectedLength = projectionSequence.unprojectedLength
+            Integer max, min
+            max = unprojectedLength > maxCoordinate ? maxCoordinate : maxCoordinate - unprojectedLength
+            min = projectionSequence.order==0 ? minCoordinate : 0
+            scaffoldBuffer = projectionSequence.order
+            // we assumef a single space between
+            min+= scaffoldBuffer
+            max += scaffoldBuffer
+//            if (index < projectionLength) {
+//                sequenceList << discontinuousProjection.projectSequence(inputSequence, index - index, max, offset+index)
+//            }
+            sequenceList << discontinuousProjection.projectSequence(inputSequence, min , max, offset)
+            index += unprojectedLength
         }
 
         // not really used .  .. .  but otherwise would carve up into different bits
@@ -202,16 +212,18 @@ class MultiSequenceProjection extends AbstractProjection {
     def calculateOffsets() {
         Integer currentOrder = 0
         Integer lastLength = 0
-        Integer originalLength = 0
+//        Integer originalLength = 0
+        Integer unprojectedLength = 0
         sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order }.each {
             DiscontinuousProjection discontinuousProjection = sequenceDiscontinuousProjectionMap.get(it)
             if (currentOrder > 0) {
                 it.offset = lastLength + 1
-                it.originalOffset = originalLength
+                it.originalOffset = unprojectedLength
             }
 
             lastLength += discontinuousProjection.bufferedLength
-            originalLength += discontinuousProjection.originalLength
+//            originalLength += discontinuousProjection.originalLength
+            unprojectedLength += it.unprojectedLength
             ++currentOrder
         }
     }
@@ -278,12 +290,12 @@ class MultiSequenceProjection extends AbstractProjection {
         List<ProjectionSequence> projectionSequenceList = sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order } as List
 
         for (ProjectionSequence projectionSequence : projectionSequenceList) {
-            Map<Integer,Coordinate>  returnMap = new TreeMap<>()
+            Map<Integer, Coordinate> returnMap = new TreeMap<>()
 
             sequenceDiscontinuousProjectionMap.get(projectionSequence).minMap.each {
-                Coordinate coordinate = new Coordinate(min: it.value.min,max:it.value.max)
+                Coordinate coordinate = new Coordinate(min: it.value.min, max: it.value.max)
                 coordinate.addOffset(projectionSequence.originalOffset)
-                returnMap.put(it.key+projectionSequence.originalOffset,coordinate)
+                returnMap.put(it.key + projectionSequence.originalOffset, coordinate)
             }
 //
             minMap.putAll(returnMap)
@@ -299,12 +311,12 @@ class MultiSequenceProjection extends AbstractProjection {
         List<ProjectionSequence> projectionSequenceList = sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order } as List
 
         for (ProjectionSequence projectionSequence : projectionSequenceList) {
-            Map<Integer,Coordinate>  returnMap = new TreeMap<>()
+            Map<Integer, Coordinate> returnMap = new TreeMap<>()
             // add a set with an offset
             sequenceDiscontinuousProjectionMap.get(projectionSequence).maxMap.each {
-                Coordinate coordinate = new Coordinate(min: it.value.min,max:it.value.max)
+                Coordinate coordinate = new Coordinate(min: it.value.min, max: it.value.max)
                 coordinate.addOffset(projectionSequence.originalOffset)
-                returnMap.put(it.key+projectionSequence.originalOffset,coordinate)
+                returnMap.put(it.key + projectionSequence.originalOffset, coordinate)
             }
 //
             maxMap.putAll(returnMap)
@@ -316,14 +328,14 @@ class MultiSequenceProjection extends AbstractProjection {
         return maxMap
     }
 
-    Coordinate getMaxCoordinate(ProjectionSequence projectionSequence = null){
-        if(projectionSequence==null){
+    Coordinate getMaxCoordinate(ProjectionSequence projectionSequence = null) {
+        if (projectionSequence == null) {
             return getMaxMap().lastEntry().value
         }
         return sequenceDiscontinuousProjectionMap.get(projectionSequence).maxMap.lastEntry().value
     }
 
-    Coordinate getMinCoordinate(){
+    Coordinate getMinCoordinate() {
         return getMinMap().firstEntry().value
     }
 
@@ -352,8 +364,8 @@ class MultiSequenceProjection extends AbstractProjection {
 //        return sequenceDiscontinuousProjectionMap.get(projectionSequence)
 //    }
 
-    List<ProjectionSequence> getProjectedSequences(){
-        return sequenceDiscontinuousProjectionMap.keySet().sort(){a,b -> a.order <=> b.order }
+    List<ProjectionSequence> getProjectedSequences() {
+        return sequenceDiscontinuousProjectionMap.keySet().sort() { a, b -> a.order <=> b.order }
     }
 
 }

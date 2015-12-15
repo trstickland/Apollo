@@ -381,7 +381,7 @@ public class DiscontinuousProjection extends AbstractProjection {
     }
 
     /**
-     * This allows for a space between each coordindate
+     * This allows for a space between each coordinate
      * @param buffer
      * @return
      */

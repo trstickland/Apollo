@@ -127,11 +127,12 @@ class RefSeqProjectorServiceIntegrationSpec extends AbstractIntegrationSpec {
         String sequenceName2 = "Group11.4"  // 75K unprojected . . . projected: 10257 -> 64197 (31 projections, length ~15K)
 
         String un87StartSequence = "ATGCACTGTCAACGTACACGGG" // starts at 0
-        String un87EndSequence = "AAAACATAA" // starts at 0
+//        String un87EndSequence = "AAAACATAA" // starts at 0
+        String un87EndSequence = "GAAAATAAAACATAA" // starts at 0
         Integer un87Length = 843
         Integer elevenFourLength = 15764
-        String elevenFourStartSequence = "ATGTTTGCTTGGGGAACTTGTG"
-        String elevenFourEndSequence = "AGTAAGCTTATTATATTG"
+        String elevenFourStartSequence = "ATGTTTGCTTGGGGAACTTGTGTTCTCTATGGATGGAGGTTAAAG"
+        String elevenFourEndSequence = "ACGTTTATATCATTCGAATAATATAAC"
         Integer elevenFourStartSequenceIndex = un87Length +1
         Integer elevenFourEndSequenceIndex = un87Length + elevenFourLength
         // total input should 78258 + 75085 = 153343
@@ -142,6 +143,7 @@ class RefSeqProjectorServiceIntegrationSpec extends AbstractIntegrationSpec {
         String returnedSequence = refSeqProjectorService.projectSequence(dataFileName,Organism.first())
 
         then:
+        assert un87Length+elevenFourLength+1+1==returnedSequence.length()
         assert returnedSequence.indexOf(un87StartSequence)==0
         assert returnedSequence.indexOf(un87EndSequence)==un87Length-un87EndSequence.length()
         assert returnedSequence.split(un87EndSequence).length==2
@@ -149,7 +151,6 @@ class RefSeqProjectorServiceIntegrationSpec extends AbstractIntegrationSpec {
         assert returnedSequence.indexOf(elevenFourStartSequence)==elevenFourStartSequenceIndex
         assert returnedSequence.indexOf(elevenFourEndSequence)==elevenFourEndSequenceIndex
         assert returnedSequence.split(elevenFourStartSequence).length==2
-        assert un87Length+elevenFourLength==returnedSequence.length()
     }
 
     void "get projected contiguous - reverse"() {

@@ -870,6 +870,7 @@ class MultiSequenceProjectionSpec extends Specification {
                 ,organism: "Human"
                 ,order: 0
                 ,unprojectedLength: 100
+                ,originalOffset: 0
         )// from 0-99
         ProjectionSequence sequence2 = new ProjectionSequence(
                 id: 2
@@ -877,6 +878,7 @@ class MultiSequenceProjectionSpec extends Specification {
                 ,organism: "Human"
                 ,order: 1
                 ,unprojectedLength: 100
+                ,originalOffset: 100
         ) // from 100-200
         ProjectionDescription projectionDescription = new ProjectionDescription(
                 referenceTrack: []
@@ -915,28 +917,32 @@ class MultiSequenceProjectionSpec extends Specification {
         assert 6==multiSequenceProjection.sequenceDiscontinuousProjectionMap.get(projectionSequenceList.get(0)).bufferedLength
         assert 7==projectionSequenceList.get(1).offset
         assert 8==multiSequenceProjection.sequenceDiscontinuousProjectionMap.get(projectionSequenceList.get(1)).bufferedLength
-        assert "Sequence1"==multiSequenceProjection.getProjectionSequence(10).name
-        assert "Sequence2"==multiSequenceProjection.getProjectionSequence(60+25).name
-        assert 7==multiSequenceProjection.getProjectionSequence(60+25).offset
+        assert sequence1.name==multiSequenceProjection.getProjectionSequence(10).name
+        assert sequence1.name==multiSequenceProjection.getProjectionSequence(80).name
+        assert sequence2.name==multiSequenceProjection.getProjectionSequence(101).name
+        assert sequence2.name==multiSequenceProjection.getProjectionSequence(160).name
+        assert sequence2.name==multiSequenceProjection.getProjectionSequence(180).name
+        assert null==multiSequenceProjection.getProjectionSequence(201)
+        assert 7==multiSequenceProjection.getProjectionSequence(60+sequence1.unprojectedLength).offset
 
         assert 0==multiSequenceProjection.projectValue(10)
         assert 2==multiSequenceProjection.projectValue(12)
         assert 3==multiSequenceProjection.projectValue(22)
         assert 6==multiSequenceProjection.projectValue(25)
-        assert 7==multiSequenceProjection.projectValue(25+23)
-        assert 11==multiSequenceProjection.projectValue(25+27)
-        assert 12==multiSequenceProjection.projectValue(25+60)
-        assert 15==multiSequenceProjection.projectValue(25+63)
+        assert 7==multiSequenceProjection.projectValue(sequence1.unprojectedLength+23)
+        assert 11==multiSequenceProjection.projectValue(sequence1.unprojectedLength+27)
+        assert 12==multiSequenceProjection.projectValue(sequence1.unprojectedLength+60)
+        assert 15==multiSequenceProjection.projectValue(sequence1.unprojectedLength+63)
 
 
         assert 10==multiSequenceProjection.projectReverseValue(0)
         assert 12==multiSequenceProjection.projectReverseValue(2)
         assert 22==multiSequenceProjection.projectReverseValue(3)
         assert 25==multiSequenceProjection.projectReverseValue(6)
-        assert 25+23==multiSequenceProjection.projectReverseValue(7)
-        assert 25+27==multiSequenceProjection.projectReverseValue(11)
-        assert 25+60==multiSequenceProjection.projectReverseValue(12)
-        assert 25+63==multiSequenceProjection.projectReverseValue(15)
+        assert sequence1.unprojectedLength+23==multiSequenceProjection.projectReverseValue(7)
+        assert sequence1.unprojectedLength+27==multiSequenceProjection.projectReverseValue(11)
+        assert sequence1.unprojectedLength+60==multiSequenceProjection.projectReverseValue(12)
+        assert sequence1.unprojectedLength+63==multiSequenceProjection.projectReverseValue(15)
 
         when: "we project a sequence through these coordinates"
         // length should be 200
@@ -945,13 +951,13 @@ class MultiSequenceProjectionSpec extends Specification {
         Integer offset = multiSequenceProjection.projectedSequences.first().unprojectedLength
 
         then: "we should confirm that both the input and retrieved sequence are correct"
+        assert 16==projectedSequence.length()
         assert 200==inputSequence.length()
         assert 100==offset
         assert inputSequence.substring(10,12)==projectedSequence.substring(0,2)
         assert inputSequence.substring(22,25)==projectedSequence.substring(3,6)
         assert inputSequence.substring(23+offset,27+offset)==projectedSequence.substring(7,11)
         assert inputSequence.substring(60+offset,63+offset)==projectedSequence.substring(12,15)
-        assert 16==projectedSequence.length()
 
         when: "we project a sequence through these smaller coordinates"
         // length should be 200
@@ -959,13 +965,12 @@ class MultiSequenceProjectionSpec extends Specification {
 //        Integer offset = multiSequenceProjection.projectedSequences.first().unprojectedLength
 
         then: "we should confirm that both the input and retrieved sequence are correct"
-//        assert 200==inputSequence.length()
+        assert sequence1.name == multiSequenceProjection.getProjectionSequence(50).name
+        assert sequence2.name == multiSequenceProjection.getProjectionSequence(150).name
+        assert 200==inputSequence.length()
         assert 100==offset
-//        assert inputSequence.substring(10,12)==projectedSequence.substring(0,2)
-//        assert inputSequence.substring(22,25)==projectedSequence.substring(3,6)
-        assert inputSequence.substring(23+offset,27+offset)==projectedSequence.substring(7,11)
-        assert inputSequence.substring(60+offset,63+offset)==projectedSequence.substring(12,15)
-        assert 9==projectedSequence.length()
+        assert 5==projectedSequence.length()
+        assert inputSequence.substring(23+offset,27+offset)==projectedSequence.substring(0,4)
     }
 
 
