@@ -183,12 +183,6 @@ JSONUtils.makeSimpleFeature = function(feature, parent)  {
 JSONUtils.createJBrowseSequenceAlteration = function( afeature )  {
     var loc = afeature.location; 
     var uid = afeature.uniquename;
-    var justification;
-    for (var i = 0; i < afeature.properties.length; i++) {
-        if (afeature.properties[i].type.name === "justification") {
-            justification = afeature.properties[i].value;
-        }
-    }
 
     return new SimpleFeature({
         data: {
@@ -198,8 +192,7 @@ JSONUtils.createJBrowseSequenceAlteration = function( afeature )  {
             id:       uid,
             type:     afeature.type.name,
             residues: afeature.residues,
-            seq:      afeature.residues,
-            justification: justification
+            seq:      afeature.residues
         },
         id: uid
     });

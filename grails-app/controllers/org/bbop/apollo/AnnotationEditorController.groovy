@@ -497,10 +497,7 @@ class AnnotationEditorController extends AbstractApolloController implements Ann
             if (parentIds.length() > 0) {
                 info.put("parent_ids", parentIds);
             }
-            def featureProperties = featurePropertyService.getNonReservedProperties(gbolFeature);
-            featureProperties.each {
-                info.put(it.tag, it.value);
-            }
+
             featureContainer.getJSONArray(FeatureStringEnum.FEATURES.value).put(info);
         }
 
