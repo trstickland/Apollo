@@ -213,7 +213,7 @@ elif [[ $1 == "jbrowse" ]];then
     # used to update / force jbrowse?
     # should call the copy target first
     check_configs
-    $gradle_executable handleJbrowse
+    $gradle_executable handleJBrowse
 else
     usage
 fi
