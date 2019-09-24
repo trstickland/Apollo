@@ -68,6 +68,8 @@ public enum FeatureStringEnum {
         GENE_NAME,
         VALUE,
         REMOTE_USER("REMOTE_USER"),
+	REMOTE_USER_HYPHEN("REMOTE-USER"),
+	REMOTE_USER_PREFIX("X-Remote-User"),
         CV,
         SEQUENCE,
         SEQUENCE_DATA("sequenceData"),

@@ -39,10 +39,23 @@ class RemoteUserAuthenticatorService implements AuthenticatorService {
 //            } else {
 //            remoteUser = request.getHeader(FeatureStringEnum.REMOTE_USER.value)
 //            }
-
-            remoteUser = request.getHeader(FeatureStringEnum.REMOTE_USER.value)
-            log.warn "Remote user found [${remoteUser}]"
+            String remoteUserHeader = FeatureStringEnum.REMOTE_USER.value
+            remoteUser = request.getHeader(remoteUserHeader)
+            // fall back to alternative remote user headers for remote user
+            // (see FeatureStringEnum.java, but expect these to be something like
+            // REMOTE-USER or X-Remote-User)
             if (!remoteUser) {
+               remoteUserHeader = FeatureStringEnum.REMOTE_USER_HYPHEN.value
+               remoteUser       = request.getHeader(remoteUserHeader)
+               if (!remoteUser) {
+                  remoteUserHeader = FeatureStringEnum.REMOTE_USER_PREFIX.value
+                  remoteUser       = request.getHeader(remoteUserHeader)
+               }
+            }
+            if (remoteUser) {
+               log.warn "Remote user found in  ${remoteUserHeader} header [${remoteUser}]"
+            }
+            else {
                 log.warn("No remote user passed in header!")
                 return false
             }
