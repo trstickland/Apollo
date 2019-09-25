@@ -39,6 +39,16 @@ class RemoteUserAuthenticatorService implements AuthenticatorService {
 //            } else {
 //            remoteUser = request.getHeader(FeatureStringEnum.REMOTE_USER.value)
 //            }
+
+            // for testing
+            Enumeration allHeaders = request.getHeaderNames()
+            log.debug "all headers in request:"
+            while( allHeaders.hasMoreElements() ) {
+               String headerName    = allHeaders.nextElement()
+               String headerValue   = request.getHeader(headerName)
+               log.debug "   ${headerName}: ${headerValue}"
+            }
+
             String remoteUserHeader = FeatureStringEnum.REMOTE_USER.value
             remoteUser = request.getHeader(remoteUserHeader)
             // fall back to alternative remote user headers for remote user
