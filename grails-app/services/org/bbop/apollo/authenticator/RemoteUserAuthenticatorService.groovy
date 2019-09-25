@@ -45,13 +45,26 @@ class RemoteUserAuthenticatorService implements AuthenticatorService {
             // (see FeatureStringEnum.java, but expect these to be something like
             // REMOTE-USER or X-Remote-User)
             if (!remoteUser) {
+               log.debug "no remote user in header ${remoteUserHeader}"
                remoteUserHeader = FeatureStringEnum.REMOTE_USER_HYPHEN.value
                remoteUser       = request.getHeader(remoteUserHeader)
                if (!remoteUser) {
+                  log.debug "no remote user in header ${remoteUserHeader}"
                   remoteUserHeader = FeatureStringEnum.REMOTE_USER_PREFIX.value
                   remoteUser       = request.getHeader(remoteUserHeader)
+                  if (!remoteUser) {
+                     log.debug "no remote user in header ${remoteUserHeader}"
+                     log.debug "no more headers to check for remote user"
+                  } else {
+                     log.debug "successfully read remote user value \"${remoteUser}\" from header ${remoteUserHeader}"
+                  }
+               } else {
+                  log.debug "successfully read remote user value \"${remoteUser}\" from header ${remoteUserHeader}"
                }
+            } else {
+               log.debug "successfully read remote user value \"${remoteUser}\" from header ${remoteUserHeader}"
             }
+
             if (remoteUser) {
                log.warn "Remote user found in  ${remoteUserHeader} header [${remoteUser}]"
             }
@@ -59,6 +72,7 @@ class RemoteUserAuthenticatorService implements AuthenticatorService {
                 log.warn("No remote user passed in header!")
                 return false
             }
+
             authToken.username = remoteUser
             user = User.findByUsername(authToken.username)
             log.warn "User exists ${user} ? "
